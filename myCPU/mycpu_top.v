@@ -303,7 +303,7 @@ module IFreg(
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
-            fs_valid <= to_fs_valid; // ÔÚreset³·ÏúµÄÏÂÒ»¸öÊ±ÖÓÉÏÉıÑØ²Å¿ªÊ¼È¡Ö¸
+            fs_valid <= to_fs_valid; // åœ¨resetæ’¤é”€çš„ä¸‹ä¸€ä¸ªæ—¶é’Ÿä¸Šå‡æ²¿æ‰å¼€å§‹å–æŒ‡
     end
 //------------------------------inst sram interface---------------------------------------
     
@@ -320,7 +320,7 @@ module IFreg(
                               br_taken ? br_target : seq_pc;
 
 //------------------------------fs and ds state interface---------------------------------------
-    //fs_pc´æÇ°Ò»ÌõÖ¸ÁîµÄpcÖµ
+    //fs_pcå­˜å‰ä¸€æ¡æŒ‡ä»¤çš„pcå€¼
     always @(posedge clk) begin
         if(~resetn)
             fs_pc <= 32'h1BFF_FFFC;
@@ -399,11 +399,11 @@ module IDreg(
     wire [15:0] op_25_22_d;
     wire [ 3:0] op_21_20_d;
     wire [31:0] op_19_15_d;
-//¼ÆÊıÆ÷Ö¸Áî
+//è®¡æ•°å™¨æŒ‡ä»¤
     wire        inst_rdcntid;
     wire        inst_rdcntvl;
     wire        inst_rdcntvh;
-//¼òµ¥ËãÊõÂß¼­ÔËËã
+//ç®€å•ç®—æœ¯é€»è¾‘è¿ç®—
     wire        inst_add_w;
     wire        inst_sub_w;
     wire        inst_slti;
@@ -424,7 +424,7 @@ module IDreg(
     wire        inst_sra_w;
     wire        inst_srai_w;
     wire        inst_addi_w;
-//·Ã´æÖ¸Áî
+//è®¿å­˜æŒ‡ä»¤
     wire        inst_ld_b;
     wire        inst_ld_h;
     wire        inst_ld_w;
@@ -433,7 +433,7 @@ module IDreg(
     wire        inst_st_b;
     wire        inst_st_h;
     wire        inst_st_w;
-//×ªÒÆÖ¸Áî
+//è½¬ç§»æŒ‡ä»¤
     wire        inst_jirl;
     wire        inst_b;
     wire        inst_bl;
@@ -446,7 +446,7 @@ module IDreg(
 
     wire        inst_lu12i_w;
     wire        inst_pcaddul2i;
-//¸´ÔÓËãÊõÂß¼­ÔËËã
+//å¤æ‚ç®—æœ¯é€»è¾‘è¿ç®—
     wire        inst_mul_w;
     wire        inst_mulh_w;
     wire        inst_mulh_wu;
@@ -454,7 +454,7 @@ module IDreg(
     wire        inst_div_wu;
     wire        inst_mod_w;
     wire        inst_mod_wu;
-//ÏµÍ³µ÷ÓÃÒì³£Ö§³ÖÖ¸Áî
+//ç³»ç»Ÿè°ƒç”¨å¼‚å¸¸æ”¯æŒæŒ‡ä»¤
     wire        inst_csrrd;
     wire        inst_csrwr;
     wire        inst_csrxchg;
@@ -462,11 +462,11 @@ module IDreg(
     wire        inst_syscall;
     wire        inst_break;
 
-    wire        type_al;        // ËãÊõÂß¼­Àà£¬arithmatic or logic
-    wire        type_ld_st;     // ·Ã´æÀà£¬ load or store
-    wire        type_bj;        // ·ÖÖ§Ìø×ªÀà£¬branch or jump
-    wire        type_ex;        // ÀıÍâÏà¹ØÀà£¬exception
-    wire        type_else;      // ²»ÖªµÀÉ¶Àà
+    wire        type_al;        // ç®—æœ¯é€»è¾‘ç±»ï¼Œarithmatic or logic
+    wire        type_ld_st;     // è®¿å­˜ç±»ï¼Œ load or store
+    wire        type_bj;        // åˆ†æ”¯è·³è½¬ç±»ï¼Œbranch or jump
+    wire        type_ex;        // ä¾‹å¤–ç›¸å…³ç±»ï¼Œexception
+    wire        type_else;      // ä¸çŸ¥é“å•¥ç±»
     
     wire        need_ui5;
     wire        need_ui12;
@@ -653,11 +653,11 @@ module IDreg(
     assign inst_ertn    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] 
                         & (rk == 5'h0e) & (~|rj) & (~|rd);
 
-    // Ö¸Áî·ÖÀà
+    // æŒ‡ä»¤åˆ†ç±»
     assign type_al    = inst_add_w  | inst_sub_w  | inst_slti   | inst_slt   | inst_sltui  | inst_sltu  |
                         inst_nor    | inst_and    | inst_andi   | inst_or    | inst_ori    | inst_xor   |
                         inst_xori   | inst_sll_w  | inst_slli_w | inst_srl_w | inst_srli_w | inst_sra_w | inst_srai_w | inst_addi_w|
-                        // ¸´ÔÓËãÊıÔËËã
+                        // å¤æ‚ç®—æ•°è¿ç®—
                         inst_mul_w  | inst_mulh_w | inst_mulh_wu| inst_div_w | inst_div_wu | inst_mod_w |
                         inst_mod_wu;
     assign type_ld_st = inst_ld_b   | inst_ld_h   | inst_ld_w   | inst_ld_bu | inst_ld_hu  | inst_st_b  |
@@ -668,7 +668,7 @@ module IDreg(
                         inst_rdcntid;
     assign type_else  = inst_rdcntvh| inst_rdcntvl| inst_lu12i_w| inst_pcaddul2i; 
 
-    // alu²Ù×÷ÂëÒëÂë
+    // aluæ“ä½œç è¯‘ç 
     assign ds_alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_hu |
                         inst_ld_h  | inst_ld_bu  | inst_ld_b | inst_st_b  | 
                         inst_st_w  | inst_st_h   | inst_jirl | inst_bl    | 
@@ -761,7 +761,7 @@ module IDreg(
     assign ds_rf_we    = gr_we & ds_valid; 
     assign ds_rf_waddr = dest; 
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
-    //Ğ´»Ø¡¢·Ã´æ¡¢Ö´ĞĞ½×¶Î´«»ØÊı¾İ´¦Àí
+    //å†™å›ã€è®¿å­˜ã€æ‰§è¡Œé˜¶æ®µä¼ å›æ•°æ®å¤„ç†
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
     assign {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
@@ -775,7 +775,7 @@ module IDreg(
     .waddr  (ws_rf_waddr ),
     .wdata  (ws_rf_wdata )
     );
-    // ³åÍ»£ºĞ´Ê¹ÄÜ + Ğ´µØÖ·²»Îª0ºÅ¼Ä´æÆ÷ + Ğ´µØÖ·Óëµ±Ç°¶Á¼Ä´æÆ÷µØÖ·ÏàÍ¬
+    // å†²çªï¼šå†™ä½¿èƒ½ + å†™åœ°å€ä¸ä¸º0å·å¯„å­˜å™¨ + å†™åœ°å€ä¸å½“å‰è¯»å¯„å­˜å™¨åœ°å€ç›¸åŒ
     assign conflict_r1_wb = (|rf_raddr1) & (rf_raddr1 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r2_wb = (|rf_raddr2) & (rf_raddr2 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r1_mem = (|rf_raddr1) & (rf_raddr1 == ms_rf_waddr) & ms_rf_we;
@@ -785,7 +785,7 @@ module IDreg(
     assign need_r1         = ~ds_src1_is_pc & (|ds_alu_op);
     assign need_r2         = ~ds_src2_is_imm & (|ds_alu_op);
     
-    // Êı¾İ³åÍ»Ê±´¦ÀíÓĞÏÈºóË³Ğò£¬ÒÔ×îºóÒ»´Î¸üĞÂÎª×¼
+    // æ•°æ®å†²çªæ—¶å¤„ç†æœ‰å…ˆåé¡ºåºï¼Œä»¥æœ€åä¸€æ¬¡æ›´æ–°ä¸ºå‡†
     assign rj_value  =  conflict_r1_exe ? es_rf_wdata:
                         conflict_r1_mem ? ms_rf_wdata:
                         conflict_r1_wb  ? ws_rf_wdata : rf_rdata1; 
@@ -794,7 +794,7 @@ module IDreg(
                         conflict_r2_wb  ? ws_rf_wdata : rf_rdata2; 
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
-    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ¶ÁÈ¡µÄÊÇexeÄÚ²¿µÄ¼ÆÊıÆ÷£¬·Ç×´Ì¬¼Ä´æÆ÷TIDÖĞµÄ¼ÆÊı
+    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // è¯»å–çš„æ˜¯exeå†…éƒ¨çš„è®¡æ•°å™¨ï¼ŒéçŠ¶æ€å¯„å­˜å™¨TIDä¸­çš„è®¡æ•°
 //------------------------------exception relavant--------------------------------------
     assign ds_csr_re    = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid;
     assign ds_csr_we    = inst_csrwr | inst_csrxchg;
@@ -910,7 +910,7 @@ module EXEreg(
              es_csr_re, es_rf_we, es_rf_waddr, es_rkd_value, es_pc, es_st_op_zip, 
              es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp} <= ds2es_bus;    
     end
-    // Ö¸Áî²ğ°ü
+    // æŒ‡ä»¤æ‹†åŒ…
     assign {op_ld_h, op_ld_hu, op_ld_w} = es_ld_inst_zip[2:0];
     assign {op_st_b, op_st_h, op_st_w} = es_st_op_zip;
     assign {rd_cnt_h, rd_cnt_l} = es_cnt_inst_zip;
@@ -959,11 +959,11 @@ module EXEreg(
     assign data_sram_wdata[23:16]   = op_st_w ? es_rkd_value[23:16] : es_rkd_value[ 7: 0];
     assign data_sram_wdata[31:24]   = op_st_w ? es_rkd_value[31:24] : 
                                       op_st_h ? es_rkd_value[15: 8] : es_rkd_value[ 7: 0];
-    // exe½×¶ÎÔİÊ±Ñ¡³öµÄĞ´»ØÊı¾İ
+    // exeé˜¶æ®µæš‚æ—¶é€‰å‡ºçš„å†™å›æ•°æ®
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
                               {32{~rd_cnt_h & ~rd_cnt_l}} & es_alu_result;
-    //ÔİÊ±ÈÏÎªes_rf_wdataµÈÓÚes_rf_result_tmp,Ö»ÓĞÔÚldÀàÖ¸ÁîĞèÒªÌØÊâ´¦Àí
+    //æš‚æ—¶è®¤ä¸ºes_rf_wdataç­‰äºes_rf_result_tmp,åªæœ‰åœ¨ldç±»æŒ‡ä»¤éœ€è¦ç‰¹æ®Šå¤„ç†
     assign es_rf_zip       = {es_csr_re & es_valid, es_res_from_mem & es_valid, es_rf_we & es_valid, es_rf_waddr, es_rf_result_tmp};    
 endmodule
 
@@ -1034,7 +1034,7 @@ module MEMreg(
         end
     end
 //------------------------------mem and wb state interface---------------------------------------
-    // Ï¸Á£¶ÈÒëÂë
+    // ç»†ç²’åº¦è¯‘ç 
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
     assign shift_rdata   = {24'b0, data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
@@ -1130,8 +1130,8 @@ module WBreg(
     assign {csr_num, csr_wmask, csr_wvalue,  csr_we} = ws_csr_zip & {79{ws_valid}};
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
             ws_except_sys, ertn_flush} = ws_except_zip;    // ertn_flush=inst_ertn
-    assign wb_ex = (ws_except_adef |                   // ÓÃ´íÎóµØÖ·È¡Ö¸ÒÑ¾­·¢Éú£¬¹Ê²»Óëws_valid¹Ò¹³
-                    ws_except_int  |                    // ÖĞ¶ÏÓÉ×´Ì¬¼Ä´æÆ÷ÖĞµÄ¼ÆÊ±Æ÷²úÉú£¬²»Óëws_valid¹Ò¹³
+    assign wb_ex = (ws_except_adef |                   // ç”¨é”™è¯¯åœ°å€å–æŒ‡å·²ç»å‘ç”Ÿï¼Œæ•…ä¸ä¸ws_validæŒ‚é’©
+                    ws_except_int  |                    // ä¸­æ–­ç”±çŠ¶æ€å¯„å­˜å™¨ä¸­çš„è®¡æ—¶å™¨äº§ç”Ÿï¼Œä¸ä¸ws_validæŒ‚é’©
                     ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
@@ -1139,7 +1139,7 @@ module WBreg(
                        ws_except_sys? `ECODE_SYS:
                        ws_except_brk? `ECODE_BRK:
                        ws_except_ine? `ECODE_INE:
-                        6'b0;   // Î´°üº¬ADEMºÍTLBR
+                        6'b0;   // æœªåŒ…å«ADEMå’ŒTLBR
     assign wb_esubcode = 9'b0;
 //------------------------------id and ws state interface---------------------------------------
     assign ws_rf_wdata = csr_re ? csr_rvalue : ws_rf_wdata_tmp;
@@ -1152,8 +1152,8 @@ module WBreg(
     assign debug_wb_rf_wnum = ws_rf_waddr;
 endmodule
 
-// 32Î»BoothÁ½Î»³ËĞèÒªÉú³É16¸ö²¿·Ö»ı
-// 32Î»ÎŞ·ûºÅÊı³Ë·¨¡ú34Î»ÓĞ·ûºÅÊı³Ë·¨£¬Ğè17¸ö²¿·Ö»ı
+// 32ä½Boothä¸¤ä½ä¹˜éœ€è¦ç”Ÿæˆ16ä¸ªéƒ¨åˆ†ç§¯
+// 32ä½æ— ç¬¦å·æ•°ä¹˜æ³•â†’34ä½æœ‰ç¬¦å·æ•°ä¹˜æ³•ï¼Œéœ€17ä¸ªéƒ¨åˆ†ç§¯
 module Adder (
     input   [63:0] in1,
     input   [63:0] in2,
@@ -1190,11 +1190,11 @@ module Wallace_Mul (
     wire [16:0] sel_neg_2x_val;
     wire [16:0] sel_0_val;
     wire [18:0] debug;
-    // À©Õ¹³É34Î»ÒÔ¼æÈİÎŞ·ûºÅÊı³Ë·¨£¨Å¼ÊıÎ»Ò×ÓÚ´¦Àí£©
+    // æ‰©å±•æˆ34ä½ä»¥å…¼å®¹æ— ç¬¦å·æ•°ä¹˜æ³•ï¼ˆå¶æ•°ä½æ˜“äºå¤„ç†ï¼‰
     wire [33:0] B_r;
     wire [33:0] B_m;
     wire [33:0] B_l;
-    wire [63:0] P [16:0];   // Î´¶ÔÆëµÄ²¿·Ö»ı
+    wire [63:0] P [16:0];   // æœªå¯¹é½çš„éƒ¨åˆ†ç§¯
 
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -1216,7 +1216,7 @@ module Wallace_Mul (
     assign sel_2x      = (~B_l & B_m & B_r);                         // 011
     assign sel_0       = (B_l & B_m & B_r) | (~B_l & ~B_m & ~B_r);     // 000, 111
 
-    // ÆæÊıÎ»²ÅÊÇÓĞĞ§µÄÑ¡È¡ĞÅºÅ
+    // å¥‡æ•°ä½æ‰æ˜¯æœ‰æ•ˆçš„é€‰å–ä¿¡å·
     assign sel_x_val    = { sel_x[32], sel_x[30], sel_x[28], sel_x[26], sel_x[24],
                             sel_x[22], sel_x[20], sel_x[18], sel_x[16],
                             sel_x[14], sel_x[12], sel_x[10], sel_x[ 8],
@@ -1237,9 +1237,9 @@ module Wallace_Mul (
                             sel_0[22], sel_0[20], sel_0[18], sel_0[16],
                             sel_0[14], sel_0[12], sel_0[10], sel_0[ 8],
                             sel_0[ 6], sel_0[ 4], sel_0[ 2], sel_0[ 0]}; 
-    // debugĞÅºÅÓ¦Îª0FFFF                                                                                              
+    // debugä¿¡å·åº”ä¸º0FFFF                                                                                              
     assign debug        = sel_x_val + sel_neg_2x_val + sel_neg_x_val + sel_2x_val + sel_0_val;
-    // Ê®Áù¸öÎ´¶ÔÆëµÄ²¿·Ö»ı
+    // åå…­ä¸ªæœªå¯¹é½çš„éƒ¨åˆ†ç§¯
     assign {P[16], P[15], P[14], P[13], P[12],
             P[11], P[10], P[ 9], P[ 8],
             P[ 7], P[ 6], P[ 5], P[ 4],
@@ -1384,7 +1384,7 @@ module Wallace_Mul (
         .C(level_6[0]),
         .S(level_6[1])
     );
-//-----------------------------------------Á÷Ë®¼¶ÇĞ·Ö-------------------------------------------
+//-----------------------------------------æµæ°´çº§åˆ‡åˆ†-------------------------------------------
     reg  [63:0] level_6_r [1:0];
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -1400,11 +1400,11 @@ module Div(
     input  wire    resetn,
     input  wire    div,
     input  wire    div_signed,
-    input  wire [31:0] x,   //±»³ıÊı
-    input  wire [31:0] y,   //³ıÊı
-    output wire [31:0] s,   //ÉÌ
-    output wire [31:0] r,   //ÓàÊı
-    output wire    complete //³ı·¨Íê³ÉĞÅºÅ
+    input  wire [31:0] x,   //è¢«é™¤æ•°
+    input  wire [31:0] y,   //é™¤æ•°
+    output wire [31:0] s,   //å•†
+    output wire [31:0] r,   //ä½™æ•°
+    output wire    complete //é™¤æ³•å®Œæˆä¿¡å·
 );
 
     wire        sign_s;
@@ -1416,17 +1416,17 @@ module Div(
     reg  [63:0] x_pad;
     reg  [32:0] y_pad;
     reg  [31:0] s_r;
-    reg  [32:0] r_r;    // µ±Ç°µÄÓàÊı
+    reg  [32:0] r_r;    // å½“å‰çš„ä½™æ•°
     reg  [ 5:0] counter;
 
-// 1.È·¶¨·ûºÅÎ»
+// 1.ç¡®å®šç¬¦å·ä½
     assign sign_s = (x[31]^y[31]) & div_signed;
     assign sign_r = x[31] & div_signed;
     assign abs_x  = (div_signed & x[31]) ? (~x+1'b1): x;
     assign abs_y  = (div_signed & y[31]) ? (~y+1'b1): y;
-// 2.Ñ­»·µü´úµÃµ½ÉÌºÍÓàÊı¾ø¶ÔÖµ
+// 2.å¾ªç¯è¿­ä»£å¾—åˆ°å•†å’Œä½™æ•°ç»å¯¹å€¼
     assign complete = counter == 6'd33;
-    //³õÊ¼»¯¼ÆÊıÆ÷
+    //åˆå§‹åŒ–è®¡æ•°å™¨
     always @(posedge div_clk) begin
         if(~resetn) begin
             counter <= 6'b0;
@@ -1438,7 +1438,7 @@ module Div(
                 counter <= counter + 1'b1;
         end
     end
-    //×¼±¸²Ù×÷Êı,counter=0
+    //å‡†å¤‡æ“ä½œæ•°,counter=0
     always @(posedge div_clk) begin
         if(~resetn)
             {x_pad, y_pad} <= {64'b0, 33'b0};
@@ -1448,9 +1448,9 @@ module Div(
         end
     end
 
-    //Çó½âµ±Ç°µü´úµÄ¼õ·¨½á¹û
-    assign pre_r = r_r - y_pad;                     //Î´»Ö¸´ÓàÊıµÄ½á¹û
-    assign recover_r = pre_r[32] ? r_r : pre_r;     //»Ö¸´ÓàÊıµÄ½á¹û
+    //æ±‚è§£å½“å‰è¿­ä»£çš„å‡æ³•ç»“æœ
+    assign pre_r = r_r - y_pad;                     //æœªæ¢å¤ä½™æ•°çš„ç»“æœ
+    assign recover_r = pre_r[32] ? r_r : pre_r;     //æ¢å¤ä½™æ•°çš„ç»“æœ
     always @(posedge div_clk) begin
         if(~resetn) 
             s_r <= 32'b0;
@@ -1462,13 +1462,13 @@ module Div(
         if(~resetn)
             r_r <= 33'b0;
         if(div & ~complete) begin
-            if(~|counter)   //ÓàÊı³õÊ¼»¯
+            if(~|counter)   //ä½™æ•°åˆå§‹åŒ–
                 r_r <= {32'b0, abs_x[31]};
             else
                 r_r <=  (counter == 32) ? recover_r : {recover_r, x_pad[31 - counter]};
         end
     end
-// 3.µ÷Õû×îÖÕÉÌºÍÓàÊı
+// 3.è°ƒæ•´æœ€ç»ˆå•†å’Œä½™æ•°
     assign s = div_signed & sign_s ? (~s_r+1'b1) : s_r;
     assign r = div_signed & sign_r ? (~r_r+1'b1) : r_r;
 endmodule
@@ -1476,91 +1476,91 @@ endmodule
 module csr(
     input  wire          clk       ,
     input  wire          reset     ,
-    // ¶Á¶Ë¿Ú
+    // è¯»ç«¯å£
     input  wire          csr_re    ,
     input  wire [13:0]   csr_num   ,
     output wire [31:0]   csr_rvalue,
-    // Ğ´¶Ë¿Ú
+    // å†™ç«¯å£
     input  wire          csr_we    ,
     input  wire [31:0]   csr_wmask ,
     input  wire [31:0]   csr_wvalue,
-    // ÓëÓ²¼şµçÂ·½»»¥µÄ½Ó¿ÚĞÅºÅ
-    output wire [31:0]   ex_entry  , //ËÍÍùpre-IFµÄÒì³£Èë¿ÚµØÖ·
-    output wire [31:0]   ertn_entry, //ËÍÍùpre-IFµÄ·µ»ØÈë¿ÚµØÖ·
-    output wire          has_int   , //ËÍÍùID½×¶ÎµÄÖĞ¶ÏÓĞĞ§ĞÅºÅ
-    input  wire          ertn_flush, //À´×ÔWB½×¶ÎµÄertnÖ¸ÁîÖ´ĞĞÓĞĞ§ĞÅºÅ
-    input  wire          wb_ex     , //À´×ÔWB½×¶ÎµÄÒì³£´¦Àí´¥·¢ĞÅºÅ
-    input  wire [ 5:0]   wb_ecode  , //À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ
-    input  wire [ 8:0]   wb_esubcode,//À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ¸¨ÖúÂë
-    input  wire [31:0]   wb_vaddr   ,//À´×ÔWB½×¶ÎµÄ·Ã´æµØÖ·
-    input  wire [31:0]   wb_pc       //Ğ´»ØµÄ·µ»ØµØÖ·
+    // ä¸ç¡¬ä»¶ç”µè·¯äº¤äº’çš„æ¥å£ä¿¡å·
+    output wire [31:0]   ex_entry  , //é€å¾€pre-IFçš„å¼‚å¸¸å…¥å£åœ°å€
+    output wire [31:0]   ertn_entry, //é€å¾€pre-IFçš„è¿”å›å…¥å£åœ°å€
+    output wire          has_int   , //é€å¾€IDé˜¶æ®µçš„ä¸­æ–­æœ‰æ•ˆä¿¡å·
+    input  wire          ertn_flush, //æ¥è‡ªWBé˜¶æ®µçš„ertnæŒ‡ä»¤æ‰§è¡Œæœ‰æ•ˆä¿¡å·
+    input  wire          wb_ex     , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸å¤„ç†è§¦å‘ä¿¡å·
+    input  wire [ 5:0]   wb_ecode  , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹
+    input  wire [ 8:0]   wb_esubcode,//æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹è¾…åŠ©ç 
+    input  wire [31:0]   wb_vaddr   ,//æ¥è‡ªWBé˜¶æ®µçš„è®¿å­˜åœ°å€
+    input  wire [31:0]   wb_pc       //å†™å›çš„è¿”å›åœ°å€
 );
     wire [ 7: 0] hw_int_in;
     wire         ipi_int_in;
-    // µ±Ç°Ä£Ê½ĞÅÏ¢
+    // å½“å‰æ¨¡å¼ä¿¡æ¯
     wire [31: 0] csr_crmd_data;
-    reg  [ 1: 0] csr_crmd_plv;      //CRMDµÄPLVÓò£¬µ±Ç°ÌØÈ¨µÈ¼¶
-    reg          csr_crmd_ie;       //CRMDµÄÈ«¾ÖÖĞ¶ÏÊ¹ÄÜĞÅºÅ
-    reg          csr_crmd_da;       //CRMDµÄÖ±½ÓµØÖ··­ÒëÊ¹ÄÜ
+    reg  [ 1: 0] csr_crmd_plv;      //CRMDçš„PLVåŸŸï¼Œå½“å‰ç‰¹æƒç­‰çº§
+    reg          csr_crmd_ie;       //CRMDçš„å…¨å±€ä¸­æ–­ä½¿èƒ½ä¿¡å·
+    reg          csr_crmd_da;       //CRMDçš„ç›´æ¥åœ°å€ç¿»è¯‘ä½¿èƒ½
     reg          csr_crmd_pg;
     reg  [ 6: 5] csr_crmd_datf;
     reg  [ 8: 7] csr_crmd_datm;
     // reg  [31: 9] csr_crmd_r0;
 
-    // ÀıÍâÇ°Ä£Ê½ĞÅÏ¢
+    // ä¾‹å¤–å‰æ¨¡å¼ä¿¡æ¯
     wire [31: 0] csr_prmd_data;
-    reg  [ 1: 0] csr_prmd_pplv;     //CRMDµÄPLVÓò¾ÉÖµ
-    reg          csr_prmd_pie;      //CRMDµÄIEÓò¾ÉÖµ
+    reg  [ 1: 0] csr_prmd_pplv;     //CRMDçš„PLVåŸŸæ—§å€¼
+    reg          csr_prmd_pie;      //CRMDçš„IEåŸŸæ—§å€¼
 
-    // ÀıÍâ¿ØÖÆ
-    wire [31: 0] csr_ecfg_data;     // ±£ÁôÎ»31:13
-    reg  [12: 0] csr_ecfg_lie;      //¾Ö²¿ÖĞ¶ÏÊ¹ÄÜÎ»
+    // ä¾‹å¤–æ§åˆ¶
+    wire [31: 0] csr_ecfg_data;     // ä¿ç•™ä½31:13
+    reg  [12: 0] csr_ecfg_lie;      //å±€éƒ¨ä¸­æ–­ä½¿èƒ½ä½
 
-    // ÀıÍâ×´Ì¬
-    wire [31: 0] csr_estat_data;    // ±£ÁôÎ»15:13, 31
-    reg  [12: 0] csr_estat_is;      // ÀıÍâÖĞ¶ÏµÄ×´Ì¬Î»£¨8¸öÓ²¼şÖĞ¶Ï+1¸ö¶¨Ê±Æ÷ÖĞ¶Ï+1¸öºË¼äÖĞ¶Ï+2¸öÈí¼şÖĞ¶Ï£©
-    reg  [ 5: 0] csr_estat_ecode;   // ÀıÍâÀàĞÍÒ»¼¶±àÂë
-    reg  [ 8: 0] csr_estat_esubcode;// ÀıÍâÀàĞÍ¶ş¼¶±àÂë
+    // ä¾‹å¤–çŠ¶æ€
+    wire [31: 0] csr_estat_data;    // ä¿ç•™ä½15:13, 31
+    reg  [12: 0] csr_estat_is;      // ä¾‹å¤–ä¸­æ–­çš„çŠ¶æ€ä½ï¼ˆ8ä¸ªç¡¬ä»¶ä¸­æ–­+1ä¸ªå®šæ—¶å™¨ä¸­æ–­+1ä¸ªæ ¸é—´ä¸­æ–­+2ä¸ªè½¯ä»¶ä¸­æ–­ï¼‰
+    reg  [ 5: 0] csr_estat_ecode;   // ä¾‹å¤–ç±»å‹ä¸€çº§ç¼–ç 
+    reg  [ 8: 0] csr_estat_esubcode;// ä¾‹å¤–ç±»å‹äºŒçº§ç¼–ç 
 
-    // ÀıÍâ·µ»ØµØÖ·ERA
+    // ä¾‹å¤–è¿”å›åœ°å€ERA
     reg  [31: 0] csr_era_data;  // data
 
-    // ÀıÍâÈë¿ÚµØÖ·eentry
-    wire [31: 0] csr_eentry_data;   // ±£ÁôÎ»5:0
-    reg  [25: 0] csr_eentry_va;     // ÀıÍâÖĞ¶ÏÈë¿Ú¸ßÎ»µØÖ·
-    // Êı¾İ±£´æ
+    // ä¾‹å¤–å…¥å£åœ°å€eentry
+    wire [31: 0] csr_eentry_data;   // ä¿ç•™ä½5:0
+    reg  [25: 0] csr_eentry_va;     // ä¾‹å¤–ä¸­æ–­å…¥å£é«˜ä½åœ°å€
+    // æ•°æ®ä¿å­˜
     reg  [31: 0] csr_save0_data;
     reg  [31: 0] csr_save1_data;
     reg  [31: 0] csr_save2_data;
     reg  [31: 0] csr_save3_data;
-    // ³ö´íĞéµØÖ·
+    // å‡ºé”™è™šåœ°å€
     wire         wb_ex_addr_err;
     reg  [31: 0] csr_badv_vaddr;
     wire [31: 0] csr_badv_data;
-    // ¶¨Ê±Æ÷±àºÅ 
+    // å®šæ—¶å™¨ç¼–å· 
     wire [31: 0] csr_tid_data;
     reg  [31: 0] csr_tid_tid;
 
-    // ¶¨Ê±Æ÷ÅäÖÃ
+    // å®šæ—¶å™¨é…ç½®
     wire [31: 0] csr_tcfg_data;
     reg          csr_tcfg_en;
     reg          csr_tcfg_periodic;
     reg  [29: 0] csr_tcfg_initval;
     wire [31: 0] tcfg_next_value;
 
-    // ¶¨Ê±Æ÷ÊıÖµ
+    // å®šæ—¶å™¨æ•°å€¼
     wire [31: 0] csr_tval_data;
     reg  [31: 0] timer_cnt;
-    // ¶¨Ê±ÖĞ¶ÏÇå³ı
+    // å®šæ—¶ä¸­æ–­æ¸…é™¤
     wire [31: 0] csr_ticlr_data;
 
     assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
     assign ex_entry = csr_eentry_data;
     assign ertn_entry = csr_era_data;
-    // CRMDµÄPLV¡¢IEÓò
+    // CRMDçš„PLVã€IEåŸŸ
     always @(posedge clk) begin
         if (reset) begin
-            csr_crmd_plv <= 2'b0;//×î¸ßÓÅÏÈ¼¶
+            csr_crmd_plv <= 2'b0;//æœ€é«˜ä¼˜å…ˆçº§
             csr_crmd_ie  <= 1'b0;
         end
         else if (wb_ex) begin
@@ -1579,7 +1579,7 @@ module csr(
         end
     end
 
-    // CRMDµÄDA¡¢PG¡¢DATF¡¢DATMÓò
+    // CRMDçš„DAã€PGã€DATFã€DATMåŸŸ
     always @(posedge clk) begin
         if(reset) begin
             csr_crmd_da   <= 1'b1;
@@ -1599,8 +1599,8 @@ module csr(
         end
     end
 
-    // PRMDµÄPPLV¡¢PIEÓò
-    always @(posedge clk) begin//Î´¶¨ÒåÒª¸´Î»
+    // PRMDçš„PPLVã€PIEåŸŸ
+    always @(posedge clk) begin//æœªå®šä¹‰è¦å¤ä½
         if (wb_ex) begin
             csr_prmd_pplv <= csr_crmd_plv;
             csr_prmd_pie  <= csr_crmd_ie;
@@ -1613,7 +1613,7 @@ module csr(
         end
     end
 
-    // ECFGµÄLIEÓò
+    // ECFGçš„LIEåŸŸ
     always @(posedge clk) begin
         if(reset)
             csr_ecfg_lie <= 13'b0;
@@ -1621,20 +1621,20 @@ module csr(
             csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
                         |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
     end
-    // ESTATµÄISÓò
+    // ESTATçš„ISåŸŸ
     assign hw_int_in = 8'b0;
     assign ipi_int_in= 1'b0;
     always @(posedge clk) begin
         if (reset) begin
             csr_estat_is[1:0] <= 2'b0;
         end
-        else if (csr_we && (csr_num == `CSR_ESTAT)) begin   //±»csr¸üĞÂ
+        else if (csr_we && (csr_num == `CSR_ESTAT)) begin   //è¢«csræ›´æ–°
             csr_estat_is[1:0] <= ( csr_wmask[`CSR_ESTAT_IS10] & csr_wvalue[`CSR_ESTAT_IS10])
                                | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
         end
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ó²ÖĞ¶Ï Òı½Å
-        csr_estat_is[10] <= 1'b0; //ÎŞ¶¨Òå
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //ç¡¬ä¸­æ–­ å¼•è„š
+        csr_estat_is[10] <= 1'b0; //æ— å®šä¹‰
 
         if (timer_cnt[31:0] == 32'b0) begin
             csr_estat_is[11] <= 1'b1;
@@ -1642,18 +1642,18 @@ module csr(
         else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
                 && csr_wvalue[`CSR_TICLR_CLR]) 
             csr_estat_is[11] <= 1'b0;
-        csr_estat_is[12] <= ipi_int_in;     // ºË¼äÖĞ¶Ï
+        csr_estat_is[12] <= ipi_int_in;     // æ ¸é—´ä¸­æ–­
     end    
-    // ESTATµÄEcodeºÍEsubCodeÓò
-    // ´¥·¢Òì³£Ê±ÌîĞ´Òì³£µÄÀàĞÍ´úºÅ£¬¾«È·Òì³£ÊÇÔÚĞ´»Ø¼¶½øĞĞ´¥·¢
+    // ESTATçš„Ecodeå’ŒEsubCodeåŸŸ
+    // è§¦å‘å¼‚å¸¸æ—¶å¡«å†™å¼‚å¸¸çš„ç±»å‹ä»£å·ï¼Œç²¾ç¡®å¼‚å¸¸æ˜¯åœ¨å†™å›çº§è¿›è¡Œè§¦å‘
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
         end
     end
-    // ERAµÄPCÓò
-    //µ±Î»ÓÚĞ´»Ø¼¶Ö¸Áî´¥·¢Òì³£Ê±£¬ĞèÒª¼ÇÂ¼µ½ ERA ¼Ä´æÆ÷µÄ PC ¾ÍÊÇµ±Ç°Ğ´»Ø¼¶µÄ PC
+    // ERAçš„PCåŸŸ
+    //å½“ä½äºå†™å›çº§æŒ‡ä»¤è§¦å‘å¼‚å¸¸æ—¶ï¼Œéœ€è¦è®°å½•åˆ° ERA å¯„å­˜å™¨çš„ PC å°±æ˜¯å½“å‰å†™å›çº§çš„ PC
     always @(posedge clk) begin
         if(wb_ex)
             csr_era_data <= wb_pc;
@@ -1683,8 +1683,8 @@ module csr(
             csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
                             | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
     end
-    // BADVµÄVAddrÓò
-    //load storeÔÚÖ´ĞĞ¼¶¡¢·Ã´æ¼¶ºÍĞ´»Ø¼¶Ôö¼ÓĞéµØÖ·Í¨Â·£¬²ÉÓÃÔö¼ÓÒ»¸övaddrÓò
+    // BADVçš„VAddråŸŸ
+    //load storeåœ¨æ‰§è¡Œçº§ã€è®¿å­˜çº§å’Œå†™å›çº§å¢åŠ è™šåœ°å€é€šè·¯ï¼Œé‡‡ç”¨å¢åŠ ä¸€ä¸ªvaddråŸŸ
     assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
     always @(posedge clk) begin
         if (wb_ex && wb_ex_addr_err) begin
@@ -1702,7 +1702,7 @@ module csr(
         end
     end
 
-    // TCFGµÄEN¡¢Periodic¡¢InitValÓò
+    // TCFGçš„ENã€Periodicã€InitValåŸŸ
     always @(posedge clk) begin
         if (reset) 
             csr_tcfg_en <= 1'b0;
@@ -1718,7 +1718,7 @@ module csr(
         end
     end
 
-    // TVALµÄTimeValÓò ·µ»Ø¶¨Ê±Æ÷¼ÆÊıÆ÷µÄÖµ
+    // TVALçš„TimeValåŸŸ è¿”å›å®šæ—¶å™¨è®¡æ•°å™¨çš„å€¼
     assign tcfg_next_value = csr_wmask[31:0] & csr_wvalue[31:0]
                            |~csr_wmask[31:0] & csr_tcfg_data;
     always @(posedge clk) begin
@@ -1728,7 +1728,7 @@ module csr(
         else if (csr_we && csr_num == `CSR_TCFG && tcfg_next_value[`CSR_TCFG_EN]) begin
             timer_cnt <= {tcfg_next_value[`CSR_TCFG_INITV], 2'b0};
         end
-        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin //¶¨Ê±Æ÷ÊÇ·ÇÖÜÆÚĞÔµÄËùÒÔÈç¹û 0-1=ff..ff,ÄÇÃ´Í£Ö¹¼ÆÊı
+        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin //å®šæ—¶å™¨æ˜¯éå‘¨æœŸæ€§çš„æ‰€ä»¥å¦‚æœ 0-1=ff..ff,é‚£ä¹ˆåœæ­¢è®¡æ•°
             if (timer_cnt[31:0] == 32'b0 && csr_tcfg_periodic) begin
                 timer_cnt <= {csr_tcfg_initval, 2'b0};
             end
@@ -1738,7 +1738,7 @@ module csr(
         end
     end
 
-    // TICLRµÄCLRÓò
+    // TICLRçš„CLRåŸŸ
     assign csr_ticlr_clr = 1'b0;
 
     assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
