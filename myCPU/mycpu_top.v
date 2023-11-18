@@ -4,7 +4,7 @@
 
     `define FS2DS_LEN 65
     `define DS2ES_LEN 250
-    `define ES2MS_LEN 123
+    `define ES2MS_LEN 124
     `define MS2WS_LEN 150
 
 //-----------------------macros for csr---------------------------
@@ -59,17 +59,25 @@ module mycpu_top(
     input  wire        clk,
     input  wire        resetn,
     // inst sram interface
-    output wire        inst_sram_en,
-    output wire [ 3:0] inst_sram_we,
-    output wire [31:0] inst_sram_addr,
-    output wire [31:0] inst_sram_wdata,
-    input  wire [31:0] inst_sram_rdata,
+    output wire         inst_sram_req,
+    output wire         inst_sram_wr,
+    output wire [ 1:0]  inst_sram_size,
+    output wire [ 3:0]  inst_sram_wstrb,
+    output wire [31:0]  inst_sram_addr,
+    output wire [31:0]  inst_sram_wdata,
+    input  wire         inst_sram_addr_ok,
+    input  wire         inst_sram_data_ok,
+    input  wire [31:0]  inst_sram_rdata,
     // data sram interface
-    output wire        data_sram_en,
-    output wire [ 3:0] data_sram_we,
-    output wire [31:0] data_sram_addr,
-    output wire [31:0] data_sram_wdata,
-    input  wire [31:0] data_sram_rdata,
+    output wire         data_sram_req,
+    output wire         data_sram_wr,
+    output wire [ 1:0]  data_sram_size,
+    output wire [ 3:0]  data_sram_wstrb,
+    output wire [31:0]  data_sram_addr,
+    output wire [31:0]  data_sram_wdata,
+    input  wire         data_sram_addr_ok,
+    input  wire         data_sram_data_ok,
+    input  wire [31:0]  data_sram_rdata,
     // trace debug interface
     output wire [31:0] debug_wb_pc,
     output wire [ 3:0] debug_wb_rf_we,
@@ -91,10 +99,10 @@ module mycpu_top(
     wire [31:0] wb_pc;
 
     wire [39:0] es_rf_zip;
-    wire [38:0] ms_rf_zip;
+    wire [39:0] ms_rf_zip;
     wire [37:0] ws_rf_zip;
 
-    wire [32:0] br_zip;
+    wire [33:0] br_zip;
     wire [ 4:0] es_ld_inst_zip;
     wire [`FS2DS_LEN -1:0] fs2ds_bus;
     wire [`DS2ES_LEN -1:0] ds2es_bus;
@@ -117,14 +125,19 @@ module mycpu_top(
     wire [ 5:0] wb_ecode;
     wire [ 8:0] wb_esubcode;
 
+    // wire ms_wait_data_ok;
+
     IFreg my_ifReg(
         .clk(clk),
         .resetn(resetn),
 
-        .inst_sram_en(inst_sram_en),
-        .inst_sram_we(inst_sram_we),
+        .inst_sram_req(inst_sram_req),
+        .inst_sram_wr(inst_sram_wr),
+        .inst_sram_size(inst_sram_size),
+        .inst_sram_wstrb(inst_sram_wstrb),
         .inst_sram_addr(inst_sram_addr),
-        .inst_sram_wdata(inst_sram_wdata),
+        .inst_sram_addr_ok(inst_sram_addr_ok),
+        .inst_sram_data_ok(inst_sram_data_ok),
         .inst_sram_rdata(inst_sram_rdata),
         
         .ds_allowin(ds_allowin),
@@ -171,11 +184,15 @@ module mycpu_top(
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
         .es2ms_valid(es2ms_valid),
+        // .ms_wait_data_ok(ms_wait_data_ok),
         
-        .data_sram_en(data_sram_en),
-        .data_sram_we(data_sram_we),
-        .data_sram_addr(data_sram_addr),
+        .data_sram_req(data_sram_req),
+        .data_sram_wr(data_sram_wr),
+        .data_sram_size(data_sram_size),
+        .data_sram_wstrb(data_sram_wstrb),
         .data_sram_wdata(data_sram_wdata),
+        .data_sram_addr(data_sram_addr),
+        .data_sram_addr_ok(data_sram_addr_ok),
 
         .ms_ex(ms_ex),
         .wb_ex(wb_ex|ertn_flush)
@@ -189,12 +206,14 @@ module mycpu_top(
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
         .es2ms_valid(es2ms_valid),
-
+        // .ms_wait_data_ok(ms_wait_data_ok),
+        
         .ws_allowin(ws_allowin),
         .ms_rf_zip(ms_rf_zip),
         .ms2ws_valid(ms2ws_valid),
         .ms2ws_bus(ms2ws_bus),
 
+        .data_sram_data_ok(data_sram_data_ok),
         .data_sram_rdata(data_sram_rdata),
 
         .ms_ex(ms_ex),
@@ -257,14 +276,18 @@ module IFreg(
     input  wire   clk,
     input  wire   resetn,
     // inst sram interface
-    output wire         inst_sram_en,
-    output wire [ 3:0]  inst_sram_we,
+    output wire         inst_sram_req,
+    output wire         inst_sram_wr,
+    output wire [ 1:0]  inst_sram_size,
+    output wire [ 3:0]  inst_sram_wstrb,
     output wire [31:0]  inst_sram_addr,
     output wire [31:0]  inst_sram_wdata,
+    input  wire         inst_sram_addr_ok,
+    input  wire         inst_sram_data_ok,
     input  wire [31:0]  inst_sram_rdata,
     // ds to fs interface
     input  wire         ds_allowin,
-    input  wire [32:0]  br_zip,
+    input  wire [33:0]  br_zip,
     // fs to ds interface
     output wire         fs2ds_valid,
     output wire [`FS2DS_LEN -1:0]  fs2ds_bus,
@@ -274,61 +297,140 @@ module IFreg(
     input  wire [31:0]  ex_entry,
     input  wire [31:0]  ertn_entry
 );
-
+    wire        pf_ready_go;
+    wire        to_fs_valid;
     reg         fs_valid;
     wire        fs_ready_go;
     wire        fs_allowin;
-    wire        to_fs_valid;
 
     wire [31:0] seq_pc;
     wire [31:0] nextpc;
 
+    wire         br_stall;
     wire         br_taken;
-    wire [ 31:0] br_target;
+    wire [31:0]  br_target;
+    reg          br_taken_r;
+    reg          wb_ex_r;
+    reg          ertn_flush_r;
+    reg  [31:0]  br_target_r;
+    reg  [31:0]  ex_entry_r;
+    reg  [31:0]  ertn_entry_r;
 
-    assign {br_taken, br_target} = br_zip;
+    assign {br_stall, br_taken, br_target} = br_zip;
 
     wire [31:0] fs_inst;
     reg  [31:0] fs_pc;
+    reg  [31:0] fs_inst_buf;
+    reg         inst_buf_valid;  // 判断指令缓存是否有效
+
+    wire        fs_cancel;
+    wire        pf_cancel;
+    wire        inst_discard;   // 判断cancel之后是否需要丢掉一条指令
+
+    // 握手成功和数据返回的次数计数器
+    reg  [31:0] req_succ;
+    reg  [31:0] recv_succ;
 
     wire        fs_except_adef;
 
     assign fs_except_adef = (|fs_pc[1:0]) & fs_valid;
-//------------------------------state control signal---------------------------------------
-    assign to_fs_valid      = resetn;
-    assign fs_ready_go      = 1'b1;
-    assign fs_allowin       = ~fs_valid | fs_ready_go & ds_allowin | ertn_flush | wb_ex;     
+//------------------------------pre-IF signal---------------------------------------
+    assign pf_ready_go      = inst_sram_req & inst_sram_addr_ok; 
+    assign to_fs_valid      = pf_ready_go;
+    assign seq_pc           = fs_pc + 3'h4;  
+    assign nextpc           = wb_ex_r? ex_entry_r: wb_ex? ex_entry:
+                              ertn_flush_r? ertn_entry_r: ertn_flush? ertn_entry:
+                              br_taken_r? br_target_r: br_taken ? br_target : seq_pc;
+    always @(posedge clk) begin
+        if(~resetn) begin
+            {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
+            {ex_entry_r, ertn_entry_r, br_target_r} <= {3{32'b0}};
+        end
+        // 当前仅当遇到fs_cancel时未等到pf_ready_go，需要将cancel相关信号存储在寄存器
+        else if(wb_ex & ~pf_ready_go) begin
+            ex_entry_r <= ex_entry;
+            wb_ex_r <= 1'b1;
+        end
+        else if(ertn_flush & ~pf_ready_go) begin
+            ertn_entry_r <= ertn_entry;
+            ertn_flush_r <= 1'b1;
+        end    
+        else if(br_taken & ~pf_ready_go) begin
+            br_target_r <= br_target;
+            br_taken_r <= 1'b1;
+        end
+        // 若对应地址已经获得了来自指令SRAM的ok，后续nextpc不再从寄存器中取
+        else if(pf_ready_go) begin
+            {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
+        end
+    end
+//------------------------------IF signal---------------------------------------
+    assign fs_ready_go      = (inst_sram_data_ok | inst_buf_valid) & ~inst_discard;
+    assign fs_allowin       = ~fs_valid | fs_ready_go & ds_allowin;     
     assign fs2ds_valid      = fs_valid & fs_ready_go;
     always @(posedge clk) begin
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
             fs_valid <= to_fs_valid; // 在reset撤销的下一个时钟上升沿才开始取指
+        else if(fs_cancel)
+            fs_valid <= 1'b0;
     end
 //------------------------------inst sram interface---------------------------------------
-    
-    assign inst_sram_en     = fs_allowin & resetn;
-    assign inst_sram_we     = 4'b0;
+    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_cancel;
+    assign inst_sram_wr     = |inst_sram_wstrb;
+    assign inst_sram_wstrb  = 4'b0;
     assign inst_sram_addr   = nextpc;
     assign inst_sram_wdata  = 32'b0;
-
-//------------------------------pc relavant signals---------------------------------------
-    
-    assign seq_pc           = fs_pc + 3'h4;  
-    assign nextpc           = wb_ex? ex_entry:
-                              ertn_flush? ertn_entry:
-                              br_taken ? br_target : seq_pc;
-
+//------------------------------cancel relevant---------------------------------------
+    assign fs_cancel = wb_ex | ertn_flush | br_taken;
+    assign pf_cancel = 1'b0;       // pre-IF无需被cancel，原因是在给出nextpc时的值都是正确的
+    // always @(posedge clk) begin
+    //     if(~resetn)
+    //         inst_discard <= 1'b0;
+    //     // 流水级取消：当pre-IF阶段发送错误地址请求已被指令SRAM接受 or IF内有有效指令且正在等待数据返回时，需要丢弃一条指令
+    //     else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & to_fs_valid)
+    //         inst_discard <= 1'b1;
+    //     else if(inst_discard & inst_sram_data_ok)
+    //         inst_discard <= 1'b0;
+    // end
+    always @(posedge clk) begin
+        if (~resetn)
+            req_succ <= 32'b0;
+        else if (inst_sram_req & inst_sram_addr_ok)
+            req_succ <= req_succ + 1'b1;
+        if (~resetn)
+            recv_succ <= 32'b0;
+        else if (inst_sram_data_ok)
+            recv_succ <= recv_succ + 1'b1;
+    end
+    // 指令丢弃：正常情况下，握手成功的读请求次数与数据返回次数之差应该不大于1，否则说明CPU发出了过多的读请求，需要丢弃部分返回的数据
+    // 计数器值的差等于0时说明读数据已经被buffer接收，等于1时说明读数据还未返回，大于1时说明在读数据还未返回的情况下发出了新的读请求
+    assign inst_discard = (req_succ - recv_succ) > 1;
 //------------------------------fs and ds state interface---------------------------------------
-    //fs_pc存前一条指令的pc值
+
     always @(posedge clk) begin
         if(~resetn)
             fs_pc <= 32'h1BFF_FFFC;
-        else if(fs_allowin)
+        else if(to_fs_valid & fs_allowin)
             fs_pc <= nextpc;
     end
-
-    assign fs_inst    = inst_sram_rdata;
+    // 设置寄存器，暂存指令，并用valid信号表示其内指令是否有效
+    always @(posedge clk) begin
+        if(~resetn) begin
+            fs_inst_buf <= 32'b0;
+            inst_buf_valid <= 1'b0;
+        end
+        else if(fs2ds_valid & ds_allowin)   // 缓存已经流向下一流水级
+            inst_buf_valid <= 1'b0;
+        else if(fs_cancel)                  // IF取消后需要清空当前buffer
+            inst_buf_valid <= 1'b0;
+        else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard & fs_valid) begin
+            fs_inst_buf <= fs_inst;
+            inst_buf_valid <= 1'b1;
+        end
+    end
+    assign fs_inst    = inst_buf_valid ? fs_inst_buf : inst_sram_rdata;
     assign fs2ds_bus = {fs_except_adef ,fs_inst, fs_pc}; // 1+32+32
 endmodule
 
@@ -338,15 +440,15 @@ module IDreg(
     // fs and ds interface
     input  wire                   fs2ds_valid,
     output wire                   ds_allowin,
-    output wire [32:0]            br_zip,
+    output wire [33:0]            br_zip,
     input  wire [`FS2DS_LEN -1:0] fs2ds_bus,
     // ds and es interface
     input  wire                   es_allowin,
     output wire                   ds2es_valid,
     output wire [`DS2ES_LEN -1:0] ds2es_bus,
-    // signals to determine whether confict occurs
+    // signals to determine whether conflict occurs
     input  wire [37:0] ws_rf_zip, // {ws_rf_we, ws_rf_waddr, ws_rf_wdata}
-    input  wire [38:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
+    input  wire [39:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
     input  wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
     // exception interface
     input  wire        has_int,
@@ -357,6 +459,7 @@ module IDreg(
     reg         ds_valid;
     reg  [31:0] ds_inst;
     wire        ds_stall;
+    wire        br_stall;
 
     wire [18:0] ds_alu_op;
     wire [31:0] ds_alu_src1   ;
@@ -488,6 +591,13 @@ module IDreg(
     wire        conflict_r2_mem;
     wire        conflict_r1_exe;
     wire        conflict_r2_exe;
+    reg         conflict_r1_wb_r;
+    reg         conflict_r2_wb_r;
+    reg         conflict_r1_mem_r;
+    reg         conflict_r2_mem_r;
+    reg         conflict_r1_exe_r;
+    reg         conflict_r2_exe_r;
+
     wire        need_r1;
     wire        need_r2;
 
@@ -503,6 +613,8 @@ module IDreg(
     wire [ 4:0] es_rf_waddr;
     wire [31:0] es_rf_wdata;
     wire        es_res_from_mem;
+    wire        ms_res_from_mem;
+    wire        ms2ws_valid;
 
     wire        ds_rf_we   ;
     wire [ 4:0] ds_rf_waddr;
@@ -525,8 +637,9 @@ module IDreg(
 //------------------------------state control signal---------------------------------------
     assign ds_ready_go      = ~ds_stall;
     assign ds_allowin       = ~ds_valid | ds_ready_go & es_allowin; 
-    assign ds_stall         = (es_res_from_mem|es_csr_re) & (conflict_r1_exe & need_r1|conflict_r2_exe & need_r2)|
-                                ms_csr_re & (conflict_r1_mem | conflict_r2_mem);    
+    assign ds_stall         = (es_res_from_mem|es_csr_re) & (conflict_r1_exe & need_r1| conflict_r2_exe & need_r2)|
+                              (ms_res_from_mem|ms_csr_re) & (conflict_r1_mem & need_r1| conflict_r2_mem & need_r2);    
+    assign br_stall         = ds_stall & type_bj;
     assign ds2es_valid      = ds_valid & ds_ready_go;
     always @(posedge clk) begin
         if(~resetn)
@@ -549,8 +662,8 @@ module IDreg(
     end
 
     assign rj_eq_rd = rj_value == rkd_value;
-    assign rj_ge_rd = ($signed(rj_value) > $signed(rkd_value));
-    assign rj_ge_rd_u = ($unsigned(rj_value) > $unsigned(rkd_value));
+    assign rj_ge_rd = ($signed(rj_value) >= $signed(rkd_value));
+    assign rj_ge_rd_u = ($unsigned(rj_value) >= $unsigned(rkd_value));
     assign br_taken = (inst_beq  &  rj_eq_rd
                     | inst_bne   & !rj_eq_rd
                     | inst_bge   &  rj_ge_rd
@@ -560,11 +673,11 @@ module IDreg(
                     | inst_jirl
                     | inst_bl
                     | inst_b
-                    ) & ds_valid;
+                    ) & ds_valid & ~br_stall;
     assign br_target = (inst_beq || inst_bne || inst_bl || inst_b || 
                         inst_bge || inst_bgeu|| inst_blt|| inst_bltu) ? (ds_pc + br_offs) :
                                                     /*inst_jirl*/ (rj_value + jirl_offs);
-    assign br_zip = {br_taken, br_target}; 
+    assign br_zip = {br_stall, br_taken, br_target}; 
 //------------------------------decode instruction---------------------------------------
     
     assign op_31_26  = ds_inst[31:26];
@@ -763,7 +876,7 @@ module IDreg(
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
     //写回、访存、执行阶段传回数据处理
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
-    assign {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
+    assign {ms_res_from_mem, ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
     regfile u_regfile(
     .clk    (clk      ),
@@ -784,7 +897,31 @@ module IDreg(
     assign conflict_r2_exe = (|rf_raddr2) & (rf_raddr2 == es_rf_waddr) & es_rf_we;
     assign need_r1         = ~ds_src1_is_pc & (|ds_alu_op);
     assign need_r2         = ~ds_src2_is_imm & (|ds_alu_op);
-    
+    // 用寄存器保存冲突信息
+    // always @(posedge clk) begin
+    //     if(~ds_ready_go) begin
+    //         if(conflict_r1_exe)
+    //             conflict_r1_exe_r <= 1'b1;
+    //         if(conflict_r2_exe)
+    //             conflict_r2_exe_r <= 1'b1;
+    //         if(conflict_r1_mem)
+    //             conflict_r1_mem_r <= 1'b1;
+    //         if(conflict_r2_mem)
+    //             conflict_r2_mem_r <= 1'b1;
+    //         if(conflict_r1_wb)
+    //             conflict_r1_wb_r <= 1'b1;
+    //         if(conflict_r2_wb)
+    //             conflict_r2_wb_r <= 1'b1;
+    //     end
+    //     else if(fs2ds_valid & ds_allowin) begin
+    //         conflict_r1_exe_r <= 1'b0;
+    //         conflict_r2_exe_r <= 1'b0;
+    //         conflict_r1_mem_r <= 1'b0;
+    //         conflict_r2_mem_r <= 1'b0;
+    //         conflict_r1_wb_r <= 1'b0;
+    //         conflict_r2_wb_r <= 1'b0;
+    //     end
+    // end
     // 数据冲突时处理有先后顺序，以最后一次更新为准
     assign rj_value  =  conflict_r1_exe ? es_rf_wdata:
                         conflict_r1_mem ? ms_rf_wdata:
@@ -792,6 +929,12 @@ module IDreg(
     assign rkd_value =  conflict_r2_exe ? es_rf_wdata:
                         conflict_r2_mem ? ms_rf_wdata:
                         conflict_r2_wb  ? ws_rf_wdata : rf_rdata2; 
+    // assign rj_value  =  (conflict_r1_exe|conflict_r1_exe_r) ? es_rf_wdata:
+    //                     (conflict_r1_mem|conflict_r1_mem_r) ? ms_rf_wdata:
+    //                     (conflict_r1_wb |conflict_r1_wb_r)  ? ws_rf_wdata : rf_rdata1; 
+    // assign rkd_value =  (conflict_r2_exe|conflict_r2_exe_r) ? es_rf_wdata:
+    //                     (conflict_r2_mem|conflict_r2_mem_r) ? ms_rf_wdata:
+    //                     (conflict_r2_wb |conflict_r2_wb_r)  ? ws_rf_wdata : rf_rdata2; 
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
     assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // 读取的是exe内部的计数器，非状态寄存器TID中的计数
@@ -840,10 +983,13 @@ module EXEreg(
     output wire        es2ms_valid,
     output reg  [31:0] es_pc,    
     // data sram interface
-    output wire        data_sram_en,
-    output wire [ 3:0] data_sram_we,
-    output wire [31:0] data_sram_addr,
-    output wire [31:0] data_sram_wdata,
+    output wire         data_sram_req,
+    output wire         data_sram_wr,
+    output wire [ 1:0]  data_sram_size,
+    output wire [ 3:0]  data_sram_wstrb,
+    output wire [31:0]  data_sram_addr,
+    output wire [31:0]  data_sram_wdata,
+    input  wire         data_sram_addr_ok,
     // exception interface
     input  wire        ms_ex,
     input  wire        wb_ex
@@ -877,6 +1023,7 @@ module EXEreg(
     wire        rd_cnt_l;
     reg  [63:0] es_timer_cnt;
 
+    wire        es_cancel;
     wire        es_ex;
     reg         es_csr_re;
     
@@ -886,11 +1033,12 @@ module EXEreg(
     reg  [ 5:0] es_except_zip_tmp;
     wire [ 6:0] es_except_zip;
     reg  [78:0] es_csr_zip;
+    wire        es_mem_req;
 //------------------------------state control signal---------------------------------------
-    assign es_ex            = |es_except_zip;
-    assign es_ready_go      = alu_complete;
+    assign es_ex            = (|es_except_zip) & es_valid;
+    assign es_ready_go      = alu_complete & (~data_sram_req | data_sram_req & data_sram_addr_ok);
     assign es_allowin       = ~es_valid | es_ready_go & ms_allowin;     
-    assign es2ms_valid  = es_valid & es_ready_go;
+    assign es2ms_valid      = es_valid & es_ready_go;
     always @(posedge clk) begin
         if(~resetn)
             es_valid <= 1'b0;
@@ -920,7 +1068,7 @@ module EXEreg(
         if(~resetn)
             es_timer_cnt <= 64'b0;
         else   
-            es_timer_cnt <= es_timer_cnt + 1'b0;
+            es_timer_cnt <= es_timer_cnt + 1'b1;
     end
     
 //------------------------------exe and mem state interface---------------------------------------
@@ -929,6 +1077,7 @@ module EXEreg(
                             
     assign es_except_zip = {es_except_ale, es_except_zip_tmp};
     assign es2ms_bus = {
+                        es_mem_req,         // 1  bit
                         es_ld_inst_zip,     // 5  bit
                         es_pc,              // 32 bit
                         es_csr_zip,         // 79 bit
@@ -937,7 +1086,7 @@ module EXEreg(
 //------------------------------alu interface---------------------------------------
     alu u_alu(
         .clk            (clk       ),
-        .resetn         (resetn & ~wb_ex),
+        .resetn         (resetn & ~wb_ex & ~(ds2es_valid & es_allowin)),
         .alu_op         (es_alu_op    ),
         .alu_src1       (es_alu_src1  ),
         .alu_src2       (es_alu_src2  ),
@@ -945,20 +1094,24 @@ module EXEreg(
         .complete       (alu_complete)
     );
 
-
 //------------------------------data sram interface---------------------------------------
+    assign es_cancel        = wb_ex;
     assign es_mem_we[0]     = op_st_w | op_st_h & ~es_alu_result[1] | op_st_b & ~es_alu_result[0] & ~es_alu_result[1];   
     assign es_mem_we[1]     = op_st_w | op_st_h & ~es_alu_result[1] | op_st_b &  es_alu_result[0] & ~es_alu_result[1];   
     assign es_mem_we[2]     = op_st_w | op_st_h &  es_alu_result[1] | op_st_b & ~es_alu_result[0] &  es_alu_result[1];   
     assign es_mem_we[3]     = op_st_w | op_st_h &  es_alu_result[1] | op_st_b &  es_alu_result[0] &  es_alu_result[1];       
-    assign data_sram_en     = (es_res_from_mem | (|es_mem_we)) & es_valid;
-    assign data_sram_we     = {4{es_valid & ~wb_ex & ~ms_ex & ~es_ex}} & es_mem_we;//store 's exception
-    assign data_sram_addr   = {es_alu_result[31:2], 2'b0};
+    assign es_mem_req       = (es_res_from_mem | (|es_mem_we));
+    assign data_sram_req    = es_mem_req & es_valid & ms_allowin;
+    assign data_sram_wr     = (|data_sram_wstrb) & es_valid & ~wb_ex & ~ms_ex & ~es_ex;
+    assign data_sram_wstrb  =  es_mem_we;
+    assign data_sram_size   = {2{op_st_b}} & 2'b0 | {2{op_st_h}} & 2'b1 | {2{op_st_w}} & 2'd2;
+    assign data_sram_addr   = es_alu_result;
     assign data_sram_wdata[ 7: 0]   = es_rkd_value[ 7: 0];
     assign data_sram_wdata[15: 8]   = op_st_b ? es_rkd_value[ 7: 0] : es_rkd_value[15: 8];
     assign data_sram_wdata[23:16]   = op_st_w ? es_rkd_value[23:16] : es_rkd_value[ 7: 0];
     assign data_sram_wdata[31:24]   = op_st_w ? es_rkd_value[31:24] : 
                                       op_st_h ? es_rkd_value[15: 8] : es_rkd_value[ 7: 0];
+//------------------------------regfile relevant---------------------------------------
     // exe阶段暂时选出的写回数据
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
@@ -978,10 +1131,11 @@ module MEMreg(
     // mem and wb state interface
     input  wire        ws_allowin,
     output wire [`MS2WS_LEN -1:0] ms2ws_bus,
-    output wire [38:0] ms_rf_zip, // {ms_rf_we, ms_rf_waddr, ms_rf_wdata}
+    output wire [39:0] ms_rf_zip, // {ms_rf_we, ms_rf_waddr, ms_rf_wdata}
     output wire        ms2ws_valid,
     // data sram interface
-    input  wire [31:0] data_sram_rdata,
+    input  wire         data_sram_data_ok,
+    input  wire [31:0]  data_sram_rdata,
     // exception signal
     output wire        ms_ex,
     input  wire        wb_ex   
@@ -999,7 +1153,7 @@ module MEMreg(
     reg         ms_rf_we      ;
     reg         ms_csr_re     ;
     reg  [4 :0] ms_rf_waddr   ;
-    reg  [7 :0] ms_ld_inst_zip;
+    reg  [4 :0] ms_ld_inst_zip;
     wire [31:0] ms_rf_wdata   ;
     wire [31:0] ms_mem_result ;
     wire [31:0] shift_rdata   ;
@@ -1008,9 +1162,13 @@ module MEMreg(
     reg  [78:0] ms_csr_zip;
     reg  [31:0] ms_pc;
 
+    wire        ms_wait_data_ok;
+    reg         ms_wait_data_ok_r;
+    reg  [31:0] ms_data_buf;
+    reg         data_buf_valid;  // 判断指令缓存是否有效
 //------------------------------state control signal---------------------------------------
-
-    assign ms_ready_go      = 1'b1;
+    assign ms_wait_data_ok  = ms_wait_data_ok_r & ms_valid & ~wb_ex;
+    assign ms_ready_go      = ~ms_wait_data_ok | ms_wait_data_ok & data_sram_data_ok;
     assign ms_allowin       = ~ms_valid | ms_ready_go & ws_allowin;     
     assign ms2ws_valid      = ms_valid & ms_ready_go;
     always @(posedge clk) begin
@@ -1021,22 +1179,38 @@ module MEMreg(
         else if(ms_allowin)
             ms_valid <= es2ms_valid; 
     end
-    assign ms_ex = |ms_except_zip; 
+    assign ms_ex = (|ms_except_zip) & ms_valid; 
+    
+//------------------------------data buffer----------------------------------------------
+    // 设置寄存器，暂存数据，并用valid信号表示其内数据是否有效
+    always @(posedge clk) begin
+        if(~resetn) begin
+            ms_data_buf <= 32'b0;
+            data_buf_valid <= 1'b0;
+        end
+        else if(ms2ws_valid & ws_allowin)   // 缓存已经流向下一流水级
+            data_buf_valid <= 1'b0;
+        else if(~data_buf_valid & data_sram_data_ok & ms_valid) begin
+            ms_data_buf <= data_sram_rdata;
+            data_buf_valid <= 1'b1;
+        end
+
+    end
 //------------------------------exe and mem state interface---------------------------------------
     always @(posedge clk) begin
         if(~resetn) begin
-            {ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= {`ES2MS_LEN{1'b0}};
+            {ms_wait_data_ok_r, ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= {`ES2MS_LEN{1'b0}};
             {ms_csr_re, ms_res_from_mem, ms_rf_we, ms_rf_waddr, ms_rf_result_tmp} <= 39'b0;
         end
         if(es2ms_valid & ms_allowin) begin
-            {ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= es2ms_bus;
+            {ms_wait_data_ok_r, ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= es2ms_bus;
             {ms_csr_re, ms_res_from_mem, ms_rf_we, ms_rf_waddr, ms_rf_result_tmp} <= es_rf_zip;
         end
     end
 //------------------------------mem and wb state interface---------------------------------------
     // 细粒度译码
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
-    assign shift_rdata   = {24'b0, data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
+    assign shift_rdata   = {24'b0, {32{data_buf_valid}} & ms_data_buf | {32{~data_buf_valid}} & data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
     assign ms_mem_result[15: 8]   =  {8{op_ld_b}} & {8{shift_rdata[7]}} |
                                      {8{op_ld_bu}} & 8'b0               |
@@ -1046,7 +1220,7 @@ module MEMreg(
                                      {16{op_ld_bu | op_ld_hu}} & 16'b0    |
                                      {16{op_ld_w}} & shift_rdata[31:16];
     assign ms_rf_wdata = {32{ms_res_from_mem}} & ms_mem_result | {32{~ms_res_from_mem}} & ms_rf_result_tmp;
-    assign ms_rf_zip  = {ms_csr_re & ms_valid, ms_rf_we & ms_valid, ms_rf_waddr, ms_rf_wdata};
+    assign ms_rf_zip  = {~ms2ws_valid & ms_res_from_mem & ms_valid, ms_csr_re & ms_valid, ms_rf_we & ms_valid, ms_rf_waddr, ms_rf_wdata};
     
     assign ms2ws_bus = {
                         ms_rf_result_tmp,   // 32 bit
@@ -1094,6 +1268,7 @@ module WBreg(
     reg         ws_rf_we_tmp;
     wire        ws_rf_we;
 
+    wire        ws_ertn;
     wire        ws_except_adef;
     wire        ws_except_ale;
     wire        ws_except_sys;
@@ -1129,10 +1304,10 @@ module WBreg(
 //-----------------------------wb and csr state interface---------------------------------------
     assign {csr_num, csr_wmask, csr_wvalue,  csr_we} = ws_csr_zip & {79{ws_valid}};
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
-            ws_except_sys, ertn_flush} = ws_except_zip;    // ertn_flush=inst_ertn
-    assign wb_ex = (ws_except_adef |                   // 用错误地址取指已经发生，故不与ws_valid挂钩
-                    ws_except_int  |                    // 中断由状态寄存器中的计时器产生，不与ws_valid挂钩
-                    ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
+            ws_except_sys, ws_ertn} = ws_except_zip;    // ertn_flush=inst_ertn
+    assign ertn_flush = ws_ertn & ws_valid;
+    assign wb_ex = (ws_except_adef | ws_except_int | ws_except_ale |
+                    ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
                        ws_except_ale? `ECODE_ALE: 
@@ -1560,7 +1735,7 @@ module csr(
     // CRMD的PLV、IE域
     always @(posedge clk) begin
         if (reset) begin
-            csr_crmd_plv <= 2'b0;//最高优先级
+            csr_crmd_plv <= 2'b0;
             csr_crmd_ie  <= 1'b0;
         end
         else if (wb_ex) begin
@@ -1600,7 +1775,7 @@ module csr(
     end
 
     // PRMD的PPLV、PIE域
-    always @(posedge clk) begin//未定义要复位
+    always @(posedge clk) begin
         if (wb_ex) begin
             csr_prmd_pplv <= csr_crmd_plv;
             csr_prmd_pie  <= csr_crmd_ie;
@@ -1628,13 +1803,13 @@ module csr(
         if (reset) begin
             csr_estat_is[1:0] <= 2'b0;
         end
-        else if (csr_we && (csr_num == `CSR_ESTAT)) begin   //被csr更新
+        else if (csr_we && (csr_num == `CSR_ESTAT)) begin
             csr_estat_is[1:0] <= ( csr_wmask[`CSR_ESTAT_IS10] & csr_wvalue[`CSR_ESTAT_IS10])
                                | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
         end
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //硬中断 引脚
-        csr_estat_is[10] <= 1'b0; //无定义
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //硬中断
+        csr_estat_is[10] <= 1'b0; 
 
         if (timer_cnt[31:0] == 32'b0) begin
             csr_estat_is[11] <= 1'b1;
@@ -1645,7 +1820,6 @@ module csr(
         csr_estat_is[12] <= ipi_int_in;     // 核间中断
     end    
     // ESTAT的Ecode和EsubCode域
-    // 触发异常时填写异常的类型代号，精确异常是在写回级进行触发
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
@@ -1653,7 +1827,6 @@ module csr(
         end
     end
     // ERA的PC域
-    //当位于写回级指令触发异常时，需要记录到 ERA 寄存器的 PC 就是当前写回级的 PC
     always @(posedge clk) begin
         if(wb_ex)
             csr_era_data <= wb_pc;
@@ -1684,7 +1857,6 @@ module csr(
                             | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
     end
     // BADV的VAddr域
-    //load store在执行级、访存级和写回级增加虚地址通路，采用增加一个vaddr域
     assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
     always @(posedge clk) begin
         if (wb_ex && wb_ex_addr_err) begin
@@ -1718,7 +1890,7 @@ module csr(
         end
     end
 
-    // TVAL的TimeVal域 返回定时器计数器的值
+    // TVAL
     assign tcfg_next_value = csr_wmask[31:0] & csr_wvalue[31:0]
                            |~csr_wmask[31:0] & csr_tcfg_data;
     always @(posedge clk) begin
@@ -1728,7 +1900,7 @@ module csr(
         else if (csr_we && csr_num == `CSR_TCFG && tcfg_next_value[`CSR_TCFG_EN]) begin
             timer_cnt <= {tcfg_next_value[`CSR_TCFG_INITV], 2'b0};
         end
-        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin //定时器是非周期性的所以如果 0-1=ff..ff,那么停止计数
+        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin
             if (timer_cnt[31:0] == 32'b0 && csr_tcfg_periodic) begin
                 timer_cnt <= {csr_tcfg_initval, 2'b0};
             end
