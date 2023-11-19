@@ -1,3 +1,172 @@
+module mycpu_top(
+    input  aclk   ,
+    input  aresetn,
+    // read req channel
+    output [ 3:0] arid   , // ¶ÁÇëÇóID
+    output [31:0] araddr , // ¶ÁÇëÇóµØÖ·
+    output [ 7:0] arlen  , // ¶ÁÇëÇó´«Êä³¤¶È£¨Êı¾İ´«ÊäÅÄÊı£©
+    output [ 2:0] arsize , // ¶ÁÇëÇó´«Êä´óĞ¡£¨Êı¾İ´«ÊäÃ¿ÅÄµÄ×Ö½ÚÊı£©
+    output [ 1:0] arburst, // ´«ÊäÀàĞÍ
+    output [ 1:0] arlock , // Ô­×ÓËø
+    output [ 3:0] arcache, // CacheÊôĞÔ
+    output [ 2:0] arprot , // ±£»¤ÊôĞÔ
+    output        arvalid, // ¶ÁÇëÇóµØÖ·ÓĞĞ§
+    input         arready, // ¶ÁÇëÇóµØÖ·ÎÕÊÖĞÅºÅ
+    // read response channel
+    input [ 3:0]  rid    , // ¶ÁÇëÇóIDºÅ£¬Í¬Ò»ÇëÇóridÓëaridÒ»ÖÂ
+    input [31:0]  rdata  , // ¶ÁÇëÇó¶Á³öµÄÊı¾İ
+    input [ 1:0]  rresp  , // ¶ÁÇëÇóÊÇ·ñÍê³É                        [¿ÉºöÂÔ]
+    input         rlast  , // ¶ÁÇëÇó×îºóÒ»ÅÄÊı¾İµÄÖ¸Ê¾ĞÅºÅ           [¿ÉºöÂÔ]
+    input         rvalid , // ¶ÁÇëÇóÊı¾İÓĞĞ§
+    output        rready , // Master¶Ë×¼±¸ºÃ½ÓÊÜÊı¾İ
+    // write req channel
+    output [ 3:0] awid   , // Ğ´ÇëÇóµÄIDºÅ
+    output [31:0] awaddr , // Ğ´ÇëÇóµÄµØÖ·
+    output [ 7:0] awlen  , // Ğ´ÇëÇó´«Êä³¤¶È£¨ÅÄÊı£©
+    output [ 2:0] awsize , // Ğ´ÇëÇó´«ÊäÃ¿ÅÄ×Ö½ÚÊı
+    output [ 1:0] awburst, // Ğ´ÇëÇó´«ÊäÀàĞÍ
+    output [ 1:0] awlock , // Ô­×ÓËø
+    output [ 3:0] awcache, // CacheÊôĞÔ
+    output [ 2:0] awprot , // ±£»¤ÊôĞÔ
+    output        awvalid, // Ğ´ÇëÇóµØÖ·ÓĞĞ§
+    input         awready, // Slave¶Ë×¼±¸ºÃ½ÓÊÜµØÖ·´«Êä   
+    // write data channel
+    output [ 3:0] wid    , // Ğ´ÇëÇóµÄIDºÅ
+    output [31:0] wdata  , // Ğ´ÇëÇóµÄĞ´Êı¾İ
+    output [ 3:0] wstrb  , // Ğ´ÇëÇó×Ö½ÚÑ¡Í¨Î»
+    output        wlast  , // Ğ´ÇëÇóµÄ×îºóÒ»ÅÄÊı¾İµÄÖ¸Ê¾ĞÅºÅ
+    output        wvalid , // Ğ´Êı¾İÓĞĞ§
+    input         wready , // Slave¶Ë×¼±¸ºÃ½ÓÊÜĞ´Êı¾İ´«Êä   
+    // write response channel
+    input  [ 3:0] bid    , // Ğ´ÇëÇóµÄIDºÅ            [¿ÉºöÂÔ]
+    input  [ 1:0] bresp  , // Ğ´ÇëÇóÍê³ÉĞÅºÅ          [¿ÉºöÂÔ]
+    input         bvalid , // Ğ´ÇëÇóÏìÓ¦ÓĞĞ§
+    output        bready , // Master¶Ë×¼±¸ºÃ½ÓÊÕÏìÓ¦ĞÅºÅ
+    // trace debug interface
+    output wire [31:0] debug_wb_pc,
+    output wire [ 3:0] debug_wb_rf_we,
+    output wire [ 4:0] debug_wb_rf_wnum,
+    output wire [31:0] debug_wb_rf_wdata
+);
+
+    // inst sram interface
+    wire        inst_sram_req;
+    wire        inst_sram_wr;
+    wire [ 1:0] inst_sram_size;
+    wire [ 3:0] inst_sram_wstrb;
+    wire [31:0] inst_sram_addr;
+    wire [31:0] inst_sram_wdata;
+    wire        inst_sram_addr_ok;
+    wire        inst_sram_data_ok;
+    wire [31:0] inst_sram_rdata;
+    // data sram interface
+    wire        data_sram_req;
+    wire        data_sram_wr;
+    wire [ 1:0] data_sram_size;
+    wire [ 3:0] data_sram_wstrb;
+    wire [31:0] data_sram_addr;
+    wire [31:0] data_sram_wdata;
+    wire        data_sram_addr_ok;
+    wire        data_sram_data_ok;
+    wire [31:0] data_sram_rdata;
+
+    mycpu_core my_core(
+        .clk            (aclk       ),
+        .resetn         (aresetn    ),
+        // inst sram interface
+        .inst_sram_req      (inst_sram_req      ),
+        .inst_sram_wr       (inst_sram_wr       ),
+        .inst_sram_size     (inst_sram_size     ),
+        .inst_sram_wstrb    (inst_sram_wstrb    ),
+        .inst_sram_addr     (inst_sram_addr     ),
+        .inst_sram_wdata    (inst_sram_wdata    ),
+        .inst_sram_addr_ok  (inst_sram_addr_ok  ),
+        .inst_sram_data_ok  (inst_sram_data_ok  ),
+        .inst_sram_rdata    (inst_sram_rdata    ),
+        .axi_arid           (arid               ),
+        // data sram interface
+        .data_sram_req      (data_sram_req      ),
+        .data_sram_wr       (data_sram_wr       ),
+        .data_sram_size     (data_sram_size     ),
+        .data_sram_wstrb    (data_sram_wstrb    ),
+        .data_sram_addr     (data_sram_addr     ),
+        .data_sram_wdata    (data_sram_wdata    ),
+        .data_sram_addr_ok  (data_sram_addr_ok  ),
+        .data_sram_data_ok  (data_sram_data_ok  ),
+        .data_sram_rdata    (data_sram_rdata    ),
+        // trace debug interface
+        .debug_wb_pc        (debug_wb_pc        ),
+        .debug_wb_rf_we     (debug_wb_rf_we     ),
+        .debug_wb_rf_wnum   (debug_wb_rf_wnum   ),
+        .debug_wb_rf_wdata  (debug_wb_rf_wdata  )
+    ); 
+
+    bridge_sram_axi my_bridge_sram_axi(
+    .aclk               (aclk               ),
+    .aresetn            (aresetn            ),
+
+    .arid               (arid               ),
+    .araddr             (araddr             ),
+    .arlen              (arlen              ),
+    .arsize             (arsize             ),
+    .arburst            (arburst            ),
+    .arlock             (arlock             ),
+    .arcache            (arcache            ),
+    .arprot             (arprot             ),
+    .arvalid            (arvalid            ),
+    .arready            (arready            ),
+
+    .rid                (rid                ),
+    .rdata              (rdata              ),
+    .rvalid             (rvalid             ),
+    .rlast              (rlast              ),
+    .rready             (rready             ),
+
+    .awid               (awid               ),
+    .awaddr             (awaddr             ),
+    .awlen              (awlen              ),
+    .awsize             (awsize             ),
+    .awburst            (awburst            ),
+    .awlock             (awlock             ),
+    .awcache            (awcache            ),
+    .awprot             (awprot             ),
+    .awvalid            (awvalid            ),
+    .awready            (awready            ),
+
+    .wid                (wid                ),
+    .wdata              (wdata              ),
+    .wstrb              (wstrb              ),
+    .wlast              (wlast              ),
+    .wvalid             (wvalid             ),
+    .wready             (wready             ),
+
+    .bid                (bid                ),
+    .bvalid             (bvalid             ),
+    .bready             (bready             ),
+
+    .inst_sram_req      (inst_sram_req      ),
+    .inst_sram_wr       (inst_sram_wr       ),
+    .inst_sram_size     (inst_sram_size     ),
+    .inst_sram_addr     (inst_sram_addr     ),
+    .inst_sram_wstrb    (inst_sram_wstrb    ),
+    .inst_sram_wdata    (inst_sram_wdata    ),
+    .inst_sram_addr_ok  (inst_sram_addr_ok  ),
+    .inst_sram_data_ok  (inst_sram_data_ok  ),
+    .inst_sram_rdata    (inst_sram_rdata    ),
+
+    .data_sram_req      (data_sram_req      ),
+    .data_sram_wr       (data_sram_wr       ),
+    .data_sram_size     (data_sram_size     ),
+    .data_sram_addr     (data_sram_addr     ),
+    .data_sram_wstrb    (data_sram_wstrb    ),
+    .data_sram_wdata    (data_sram_wdata    ),
+    .data_sram_addr_ok  (data_sram_addr_ok  ),
+    .data_sram_data_ok  (data_sram_data_ok  ),
+    .data_sram_rdata    (data_sram_rdata    )
+);
+
+endmodule
+
 `ifndef MACRO
     `define MACRO
 //-----------------------macros for bus---------------------------
@@ -55,7 +224,7 @@
 
 `endif
 
-module mycpu_top(
+module mycpu_core(
     input  wire        clk,
     input  wire        resetn,
     // inst sram interface
@@ -68,6 +237,7 @@ module mycpu_top(
     input  wire         inst_sram_addr_ok,
     input  wire         inst_sram_data_ok,
     input  wire [31:0]  inst_sram_rdata,
+    input  wire [ 3:0]  axi_arid,
     // data sram interface
     output wire         data_sram_req,
     output wire         data_sram_wr,
@@ -139,6 +309,8 @@ module mycpu_top(
         .inst_sram_addr_ok(inst_sram_addr_ok),
         .inst_sram_data_ok(inst_sram_data_ok),
         .inst_sram_rdata(inst_sram_rdata),
+        .inst_sram_wdata(inst_sram_wdata),
+        .axi_arid(axi_arid),
         
         .ds_allowin(ds_allowin),
         .br_zip(br_zip),
@@ -272,6 +444,345 @@ module mycpu_top(
     );
 endmodule
 
+
+module bridge_sram_axi(
+    input               aclk,
+    input               aresetn,
+    // read req channel
+    output  reg [ 3:0]      arid,
+    output  reg [31:0]      araddr,
+    output  reg [ 7:0]      arlen,
+    output  reg [ 2:0]      arsize,
+    output  reg [ 1:0]      arburst,
+    output  reg [ 1:0]      arlock,
+    output  reg [ 3:0]      arcache,
+    output  reg [ 2:0]      arprot,
+    output              	arvalid,
+    input               	arready,
+    // read response channel
+    input   	[ 3:0]      rid,
+    input   	[31:0]      rdata,
+    input   	[ 1:0]      rresp,
+    input               	rlast,
+    input               	rvalid,
+    output              	rready,
+    // write req channel
+    output  reg [ 3:0]      awid,
+    output  reg [31:0]      awaddr,
+    output  reg [ 7:0]      awlen,
+    output  reg [ 2:0]      awsize,
+    output  reg [ 1:0]      awburst,
+    output  reg [ 1:0]      awlock,
+    output  reg [ 3:0]      awcache,
+    output  reg [ 2:0]      awprot,
+    output              	awvalid,
+    input               	awready,
+    // write data channel
+    output  reg [ 3:0]      wid,
+    output  reg [31:0]      wdata,
+    output  reg [ 3:0]      wstrb,
+    output  reg         	wlast,
+    output              	wvalid,
+    input               	wready,
+    // write response channel
+    input   	[ 3:0]      bid,
+    input   	[ 1:0]      bresp,
+    input               	bvalid,
+    output              	bready,
+    // inst sram interface
+    input               	inst_sram_req,
+    input               	inst_sram_wr,
+    input   	[ 1:0]      inst_sram_size,
+    input   	[31:0]      inst_sram_addr,
+    input   	[ 3:0]      inst_sram_wstrb,
+    input   	[31:0]      inst_sram_wdata,
+    output              inst_sram_addr_ok,
+    output              inst_sram_data_ok,
+    output  [31:0]      inst_sram_rdata,
+    // data sram interface
+    input               	data_sram_req,
+    input               	data_sram_wr,
+    input   	[ 1:0]      data_sram_size,
+    input   	[31:0]      data_sram_addr,
+    input   	[31:0]      data_sram_wdata,
+    input   	[ 3:0]      data_sram_wstrb,
+    output              data_sram_addr_ok,
+    output              data_sram_data_ok,
+    output  [31:0]      data_sram_rdata
+);
+	// ×´Ì¬»ú×´Ì¬¼Ä´æÆ÷
+	reg [4:0] ar_current_state;	// ¶ÁÇëÇó×´Ì¬»ú
+	reg [4:0] ar_next_state;
+	reg [4:0] r_current_state;	// ¶ÁÊı¾İ×´Ì¬»ú
+	reg [4:0] r_next_state;
+	reg [4:0] w_current_state;	// Ğ´ÇëÇóºÍĞ´Êı¾İ×´Ì¬»ú
+	reg [4:0] w_next_state;
+	reg [4:0] b_current_state;	// Ğ´ÏàÓ¦×´Ì¬»ú
+	reg [4:0] b_next_state;
+	// µØÖ·ÒÑ¾­ÎÕÊÖ³É¹¦¶øÎ´ÏìÓ¦µÄÇé¿ö£¬ĞèÒª¼ÆÊı
+	reg [1:0] ar_resp_cnt;
+	reg [1:0] aw_resp_cnt;
+	reg [1:0] wd_resp_cnt;
+	// Êı¾İ¼Ä´æÆ÷£¬0-Ö¸ÁîSRAM¼Ä´æÆ÷£¬1-Êı¾İSRAM¼Ä´æÆ÷£¨¸ù¾İidË÷Òı£©
+	reg [31:0] buf_rdata [1:0];
+	// Êı¾İÏà¹ØµÄÅĞ¶ÏĞÅºÅ
+	wire read_block;
+	// Èô¸É¼Ä´æÆ÷
+    reg  [ 3:0] rid_r;
+
+	localparam  IDLE = 5'b1;         //¸÷¸ö×´Ì¬»ú¹²ÓÃIDLE×´Ì¬  
+//--------------------------------state machine for read req channel-------------------------------------------
+    //¶ÁÇëÇóÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
+    localparam  AR_REQ_START  	= 3'b010,
+				AR_REQ_END		= 3'b100;
+	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
+	always @(posedge aclk) begin
+		if(~aresetn)
+			ar_current_state <= IDLE;
+		else 
+			ar_current_state <= ar_next_state;
+	end
+	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
+	always @(*) begin
+		case(ar_current_state)
+			IDLE:begin
+				if(~aresetn | read_block)
+					ar_next_state = IDLE;
+				else if(data_sram_req & ~data_sram_wr | inst_sram_req & ~inst_sram_wr)
+					ar_next_state = AR_REQ_START;
+				else
+					ar_next_state = IDLE;
+			end
+			AR_REQ_START:begin
+				if(arvalid & arready) 
+					ar_next_state = AR_REQ_END;
+				else 
+					ar_next_state = AR_REQ_START;
+			end
+			AR_REQ_END:begin
+				ar_next_state = IDLE;
+			end
+		endcase
+	end
+//--------------------------------state machine for read response channel-------------------------------------------
+    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
+    localparam  R_DATA_START   	= 3'b010,
+				R_DATA_END		= 3'b100;
+    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
+	always @(posedge aclk) begin
+		if(~aresetn)
+			r_current_state <= IDLE;
+		else 
+			r_current_state <= r_next_state;
+	end
+	//¶ÁÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
+	always @(*) begin
+		case(r_current_state)
+			IDLE:begin
+				if(aresetn & arvalid & arready | (|ar_resp_cnt))
+					r_next_state = R_DATA_START;
+				else
+					r_next_state = IDLE;
+			end
+			R_DATA_START:begin
+				if(rvalid & rready & rlast) 	// ´«ÊäÍê±Ï
+					r_next_state = R_DATA_END;
+				else
+					r_next_state = R_DATA_START;
+			end
+			R_DATA_END:
+				r_next_state = IDLE;
+			default:
+				r_next_state = IDLE;
+		endcase
+	end
+//--------------------------------state machine for write req & data channel-------------------------------------------
+    //Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
+	localparam  W_REQ_START      		= 5'b00010,
+				W_ADDR_RESP				= 5'b00100,
+				W_DATA_RESP      		= 5'b01000,
+				W_REQ_END				= 5'b10000;
+    //Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
+	always @(posedge aclk) begin
+		if(~aresetn)
+			w_current_state <= IDLE;
+		else 
+			w_current_state <= w_next_state;
+	end
+	//Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
+	always @(*) begin
+		case(w_current_state)
+			IDLE:begin
+				if(~aresetn)
+					w_next_state = IDLE;
+				else if(data_sram_wr)
+					w_next_state = W_REQ_START;
+				else
+					w_next_state = IDLE;
+			end
+			W_REQ_START:
+				if(awvalid & awready & wvalid & wready | (|aw_resp_cnt)&(|wd_resp_cnt))
+					w_next_state = W_REQ_END;
+				else if(awvalid & awready | (|aw_resp_cnt))
+					w_next_state = W_ADDR_RESP;
+				else if(wvalid & wready | (|wd_resp_cnt))
+					w_next_state = W_DATA_RESP;
+				else
+					w_next_state = W_REQ_START;
+			W_ADDR_RESP:begin
+				if(wvalid & wready) 
+					w_next_state = W_REQ_END;
+				else 
+					w_next_state = W_ADDR_RESP;
+			end
+			W_DATA_RESP:begin
+				if(awvalid & awready)
+					w_next_state = W_REQ_END;
+				else
+					w_next_state = W_DATA_RESP;
+			end
+			W_REQ_END:
+				if(bvalid &bvalid)
+					w_next_state = IDLE;
+				else
+					w_next_state = W_REQ_END;
+		endcase
+	end
+//--------------------------------state machine for write response channel-------------------------------------------
+    //Ğ´ÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
+    localparam  B_START     = 3'b010,
+				B_END		= 3'b100;
+    //Ğ´ÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
+	always @(posedge aclk) begin
+		if(~aresetn)
+			b_current_state <= IDLE;
+		else 
+			b_current_state <= b_next_state;
+	end
+	//Ğ´ÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
+	always @(*) begin
+		case(b_current_state)
+			IDLE:begin
+				if(aresetn & bready)
+					b_next_state = B_START;
+				else
+					b_next_state = IDLE;
+			end
+			B_START:begin
+				if(bready & bvalid) 
+					b_next_state = B_END;
+				else 
+					b_next_state = B_START;
+			end
+			B_END:begin
+				b_next_state = IDLE;
+			end
+		endcase
+	end
+//-----------------------------------------read req channel---------------------------------------
+	assign arvalid = ar_current_state[1];
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			arid <= 4'b0;
+			araddr <= 32'b0;
+			arsize <= 3'b0;
+			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// ³£Öµ
+		end
+		else if(ar_current_state[0]) begin	// ¶ÁÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
+			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// Êı¾İRAMÇëÇóÓÅÏÈÓÚÖ¸ÁîRAM
+			araddr <= data_sram_req & ~data_sram_wr? data_sram_addr : inst_sram_addr;
+			arsize <= data_sram_req & ~data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
+		end
+	end
+
+//-----------------------------------------read response channel---------------------------------------
+    always @(posedge aclk) begin
+		if(~aresetn)
+			ar_resp_cnt <= 2'b0;
+		else if(arvalid & arready & rvalid & rready)	// ¶ÁµØÖ·ºÍÊı¾İchannelÍ¬Ê±Íê³ÉÎÕÊÖ
+			ar_resp_cnt <= ar_resp_cnt;		
+		else if(arvalid & arready)
+			ar_resp_cnt <= ar_resp_cnt + 1'b1;
+		else if(rvalid & rready)
+			ar_resp_cnt <= ar_resp_cnt - 1'b1;
+	end
+	assign rready = r_current_state[1];
+//-----------------------------------------write req channel---------------------------------------
+	assign awvalid = w_current_state[1] | w_current_state[3];	// W_REQ_START | W_DATA_RESP
+
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			awaddr <= 32'b0;
+			awsize <= 3'b0;
+			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// ³£Öµ
+		end
+		else if(w_current_state[0]) begin	// Ğ´ÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
+			awaddr <= data_sram_wr? data_sram_addr : inst_sram_addr;
+			awsize <= data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
+		end
+	end
+//-----------------------------------------write data channel---------------------------------------
+    assign wvalid = w_current_state[1] | w_current_state[2];	// W_REQ_START | W_ADDR_RESP
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			wstrb <= 4'b0;
+			wdata <= 32'b0;
+			{wid, wlast} <= {4'b1, 1'b1};	// ³£Öµ
+		end
+		else if(w_current_state[0]) begin	// Ğ´ÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
+			wstrb <= data_sram_wstrb;
+			wdata <= data_sram_wdata;
+		end
+	end
+//-----------------------------------------write response channel---------------------------------------
+    assign bready = w_current_state[4];
+	always @(posedge aclk) begin
+		if(~aresetn) begin
+			aw_resp_cnt <= 2'b0;
+		end
+		else if(awvalid & awready)
+			aw_resp_cnt <= aw_resp_cnt + {1'b0, ~(bvalid & bready)};
+		else if(bvalid & bready) 
+			aw_resp_cnt <= aw_resp_cnt - 1'b1;
+	end
+
+	always @(posedge aclk) begin
+		if(~aresetn) begin
+			wd_resp_cnt <= 2'b0;
+		end
+		else if(wvalid & wready)
+			wd_resp_cnt <= wd_resp_cnt + {1'b0, ~(bvalid & bready)};
+		else if(bvalid & bready) begin
+			wd_resp_cnt <= wd_resp_cnt - 1'b1;
+		end
+	end
+//-----------------------------------------rdata buffer---------------------------------------
+	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// ¶ÁĞ´µØÖ·ÏàÍ¬ÇÒÓĞĞ´²Ù×÷ÇÒÊı¾İÎ´Ğ´Èë
+	always @(posedge aclk)begin
+		if(!aresetn)
+			{buf_rdata[1], buf_rdata[0]} <= 64'b0;
+		else if(rvalid & rready)
+			buf_rdata[rid] <= rdata;
+	end
+	assign data_sram_rdata = buf_rdata[1];
+	assign data_sram_addr_ok = arid[0] & arvalid & arready | wid[0] & awvalid & awready ; 
+	assign data_sram_data_ok = rid_r[0] & r_current_state[2] | bid[0] & bvalid & bready; 
+	
+	assign inst_sram_rdata = buf_rdata[0];
+	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rreadyµÄÏÂÒ»ÅÄ
+	assign inst_sram_addr_ok = ~arid[0] & arvalid & arready;
+
+	// data_ok ²»²ÉÓÃÈçÏÂÊÇÒòÎªĞèÒª´ÓbufferÖĞÄÃÊı¾İ£¬ÔòÒªµÈµ½ÏÂÒ»ÅÄ
+	// assign inst_sram_data_ok = ~rid[0] & rvalid & rready;
+
+	always @(posedge aclk)  begin
+		if(~aresetn)
+			rid_r <= 4'b0;
+		else if(rvalid & rready)
+			rid_r <= rid;
+	end	
+endmodule
+
 module IFreg(
     input  wire   clk,
     input  wire   resetn,
@@ -285,6 +796,7 @@ module IFreg(
     input  wire         inst_sram_addr_ok,
     input  wire         inst_sram_data_ok,
     input  wire [31:0]  inst_sram_rdata,
+    input  wire [ 3:0]  axi_arid,
     // ds to fs interface
     input  wire         ds_allowin,
     input  wire [33:0]  br_zip,
@@ -299,6 +811,7 @@ module IFreg(
 );
     wire        pf_ready_go;
     wire        to_fs_valid;
+    reg         pf_block;
     reg         fs_valid;
     wire        fs_ready_go;
     wire        fs_allowin;
@@ -321,22 +834,18 @@ module IFreg(
     wire [31:0] fs_inst;
     reg  [31:0] fs_pc;
     reg  [31:0] fs_inst_buf;
-    reg         inst_buf_valid;  // åˆ¤æ–­æŒ‡ä»¤ç¼“å­˜æ˜¯å¦æœ‰æ•ˆ
+    reg         inst_buf_valid;  // ÅĞ¶ÏÖ¸Áî»º´æÊÇ·ñÓĞĞ§
 
     wire        fs_cancel;
     wire        pf_cancel;
-    wire        inst_discard;   // åˆ¤æ–­cancelä¹‹åæ˜¯å¦éœ€è¦ä¸¢æ‰ä¸€æ¡æŒ‡ä»¤
-
-    // æ¡æ‰‹æˆåŠŸå’Œæ•°æ®è¿”å›çš„æ¬¡æ•°è®¡æ•°å™¨
-    reg  [31:0] req_succ;
-    reg  [31:0] recv_succ;
+    reg         inst_discard;   // ÅĞ¶ÏcancelÖ®ºóÊÇ·ñĞèÒª¶ªµôÒ»ÌõÖ¸Áî
 
     wire        fs_except_adef;
 
     assign fs_except_adef = (|fs_pc[1:0]) & fs_valid;
 //------------------------------pre-IF signal---------------------------------------
     assign pf_ready_go      = inst_sram_req & inst_sram_addr_ok; 
-    assign to_fs_valid      = pf_ready_go;
+    assign to_fs_valid      = pf_ready_go & ~pf_cancel & ~pf_block;
     assign seq_pc           = fs_pc + 3'h4;  
     assign nextpc           = wb_ex_r? ex_entry_r: wb_ex? ex_entry:
                               ertn_flush_r? ertn_entry_r: ertn_flush? ertn_entry:
@@ -346,23 +855,30 @@ module IFreg(
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
             {ex_entry_r, ertn_entry_r, br_target_r} <= {3{32'b0}};
         end
-        // å½“å‰ä»…å½“é‡åˆ°fs_cancelæ—¶æœªç­‰åˆ°pf_ready_goï¼Œéœ€è¦å°†cancelç›¸å…³ä¿¡å·å­˜å‚¨åœ¨å¯„å­˜å™¨
-        else if(wb_ex & ~pf_ready_go) begin
+        else if(wb_ex) begin
             ex_entry_r <= ex_entry;
             wb_ex_r <= 1'b1;
         end
-        else if(ertn_flush & ~pf_ready_go) begin
+        else if(ertn_flush) begin
             ertn_entry_r <= ertn_entry;
             ertn_flush_r <= 1'b1;
         end    
-        else if(br_taken & ~pf_ready_go) begin
+        else if(br_taken) begin
             br_target_r <= br_target;
             br_taken_r <= 1'b1;
         end
-        // è‹¥å¯¹åº”åœ°å€å·²ç»è·å¾—äº†æ¥è‡ªæŒ‡ä»¤SRAMçš„okï¼Œåç»­nextpcä¸å†ä»å¯„å­˜å™¨ä¸­å–
+        // Èô¶ÔÓ¦µØÖ·ÒÑ¾­»ñµÃÁËÀ´×ÔÖ¸ÁîSRAMµÄok£¬ºóĞønextpc²»ÔÙ´Ó¼Ä´æÆ÷ÖĞÈ¡
         else if(pf_ready_go) begin
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
         end
+    end
+    always @(posedge clk) begin
+        if(~resetn)
+            pf_block <= 1'b0;
+        else if(pf_cancel & ~pf_block & ~axi_arid[0])
+            pf_block <= 1'b1;
+        else if(inst_sram_data_ok)
+            pf_block <= 1'b0;
     end
 //------------------------------IF signal---------------------------------------
     assign fs_ready_go      = (inst_sram_data_ok | inst_buf_valid) & ~inst_discard;
@@ -372,41 +888,30 @@ module IFreg(
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
-            fs_valid <= to_fs_valid; // åœ¨resetæ’¤é”€çš„ä¸‹ä¸€ä¸ªæ—¶é’Ÿä¸Šå‡æ²¿æ‰å¼€å§‹å–æŒ‡
+            fs_valid <= to_fs_valid; // ÔÚreset³·ÏúµÄÏÂÒ»¸öÊ±ÖÓÉÏÉıÑØ²Å¿ªÊ¼È¡Ö¸
         else if(fs_cancel)
             fs_valid <= 1'b0;
     end
 //------------------------------inst sram interface---------------------------------------
-    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_cancel;
+    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_block;
     assign inst_sram_wr     = |inst_sram_wstrb;
     assign inst_sram_wstrb  = 4'b0;
     assign inst_sram_addr   = nextpc;
     assign inst_sram_wdata  = 32'b0;
+    assign inst_sram_size   = 3'b0;
 //------------------------------cancel relevant---------------------------------------
     assign fs_cancel = wb_ex | ertn_flush | br_taken;
-    assign pf_cancel = 1'b0;       // pre-IFæ— éœ€è¢«cancelï¼ŒåŸå› æ˜¯åœ¨ç»™å‡ºnextpcæ—¶çš„å€¼éƒ½æ˜¯æ­£ç¡®çš„
-    // always @(posedge clk) begin
-    //     if(~resetn)
-    //         inst_discard <= 1'b0;
-    //     // æµæ°´çº§å–æ¶ˆï¼šå½“pre-IFé˜¶æ®µå‘é€é”™è¯¯åœ°å€è¯·æ±‚å·²è¢«æŒ‡ä»¤SRAMæ¥å— or IFå†…æœ‰æœ‰æ•ˆæŒ‡ä»¤ä¸”æ­£åœ¨ç­‰å¾…æ•°æ®è¿”å›æ—¶ï¼Œéœ€è¦ä¸¢å¼ƒä¸€æ¡æŒ‡ä»¤
-    //     else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & to_fs_valid)
-    //         inst_discard <= 1'b1;
-    //     else if(inst_discard & inst_sram_data_ok)
-    //         inst_discard <= 1'b0;
-    // end
+    // assign pf_cancel = 1'b0;       // pre-IFÎŞĞè±»cancel£¬Ô­ÒòÊÇÔÚ¸ø³önextpcÊ±µÄÖµ¶¼ÊÇÕıÈ·µÄ
+    assign pf_cancel = fs_cancel;
     always @(posedge clk) begin
-        if (~resetn)
-            req_succ <= 32'b0;
-        else if (inst_sram_req & inst_sram_addr_ok)
-            req_succ <= req_succ + 1'b1;
-        if (~resetn)
-            recv_succ <= 32'b0;
-        else if (inst_sram_data_ok)
-            recv_succ <= recv_succ + 1'b1;
+        if(~resetn)
+            inst_discard <= 1'b0;
+        // Á÷Ë®¼¶È¡Ïû£ºµ±pre-IF½×¶Î·¢ËÍ´íÎóµØÖ·ÇëÇóÒÑ±»Ö¸ÁîSRAM½ÓÊÜ or IFÄÚÓĞÓĞĞ§Ö¸ÁîÇÒÕıÔÚµÈ´ıÊı¾İ·µ»ØÊ±£¬ĞèÒª¶ªÆúÒ»ÌõÖ¸Áî
+        else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & inst_sram_req)
+            inst_discard <= 1'b1;
+        else if(inst_discard & inst_sram_data_ok)
+            inst_discard <= 1'b0;
     end
-    // æŒ‡ä»¤ä¸¢å¼ƒï¼šæ­£å¸¸æƒ…å†µä¸‹ï¼Œæ¡æ‰‹æˆåŠŸçš„è¯»è¯·æ±‚æ¬¡æ•°ä¸æ•°æ®è¿”å›æ¬¡æ•°ä¹‹å·®åº”è¯¥ä¸å¤§äº1ï¼Œå¦åˆ™è¯´æ˜CPUå‘å‡ºäº†è¿‡å¤šçš„è¯»è¯·æ±‚ï¼Œéœ€è¦ä¸¢å¼ƒéƒ¨åˆ†è¿”å›çš„æ•°æ®
-    // è®¡æ•°å™¨å€¼çš„å·®ç­‰äº0æ—¶è¯´æ˜è¯»æ•°æ®å·²ç»è¢«bufferæ¥æ”¶ï¼Œç­‰äº1æ—¶è¯´æ˜è¯»æ•°æ®è¿˜æœªè¿”å›ï¼Œå¤§äº1æ—¶è¯´æ˜åœ¨è¯»æ•°æ®è¿˜æœªè¿”å›çš„æƒ…å†µä¸‹å‘å‡ºäº†æ–°çš„è¯»è¯·æ±‚
-    assign inst_discard = (req_succ - recv_succ) > 1;
 //------------------------------fs and ds state interface---------------------------------------
 
     always @(posedge clk) begin
@@ -415,17 +920,17 @@ module IFreg(
         else if(to_fs_valid & fs_allowin)
             fs_pc <= nextpc;
     end
-    // è®¾ç½®å¯„å­˜å™¨ï¼Œæš‚å­˜æŒ‡ä»¤ï¼Œå¹¶ç”¨validä¿¡å·è¡¨ç¤ºå…¶å†…æŒ‡ä»¤æ˜¯å¦æœ‰æ•ˆ
+    // ÉèÖÃ¼Ä´æÆ÷£¬Ôİ´æÖ¸Áî£¬²¢ÓÃvalidĞÅºÅ±íÊ¾ÆäÄÚÖ¸ÁîÊÇ·ñÓĞĞ§
     always @(posedge clk) begin
         if(~resetn) begin
             fs_inst_buf <= 32'b0;
             inst_buf_valid <= 1'b0;
         end
-        else if(fs2ds_valid & ds_allowin)   // ç¼“å­˜å·²ç»æµå‘ä¸‹ä¸€æµæ°´çº§
+        else if(fs2ds_valid & ds_allowin)   // »º´æÒÑ¾­Á÷ÏòÏÂÒ»Á÷Ë®¼¶
             inst_buf_valid <= 1'b0;
-        else if(fs_cancel)                  // IFå–æ¶ˆåéœ€è¦æ¸…ç©ºå½“å‰buffer
+        else if(fs_cancel)                  // IFÈ¡ÏûºóĞèÒªÇå¿Õµ±Ç°buffer
             inst_buf_valid <= 1'b0;
-        else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard & fs_valid) begin
+        else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard) begin
             fs_inst_buf <= fs_inst;
             inst_buf_valid <= 1'b1;
         end
@@ -502,11 +1007,11 @@ module IDreg(
     wire [15:0] op_25_22_d;
     wire [ 3:0] op_21_20_d;
     wire [31:0] op_19_15_d;
-//è®¡æ•°å™¨æŒ‡ä»¤
+//¼ÆÊıÆ÷Ö¸Áî
     wire        inst_rdcntid;
     wire        inst_rdcntvl;
     wire        inst_rdcntvh;
-//ç®€å•ç®—æœ¯é€»è¾‘è¿ç®—
+//¼òµ¥ËãÊõÂß¼­ÔËËã
     wire        inst_add_w;
     wire        inst_sub_w;
     wire        inst_slti;
@@ -527,7 +1032,7 @@ module IDreg(
     wire        inst_sra_w;
     wire        inst_srai_w;
     wire        inst_addi_w;
-//è®¿å­˜æŒ‡ä»¤
+//·Ã´æÖ¸Áî
     wire        inst_ld_b;
     wire        inst_ld_h;
     wire        inst_ld_w;
@@ -536,7 +1041,7 @@ module IDreg(
     wire        inst_st_b;
     wire        inst_st_h;
     wire        inst_st_w;
-//è½¬ç§»æŒ‡ä»¤
+//×ªÒÆÖ¸Áî
     wire        inst_jirl;
     wire        inst_b;
     wire        inst_bl;
@@ -549,7 +1054,7 @@ module IDreg(
 
     wire        inst_lu12i_w;
     wire        inst_pcaddul2i;
-//å¤æ‚ç®—æœ¯é€»è¾‘è¿ç®—
+//¸´ÔÓËãÊõÂß¼­ÔËËã
     wire        inst_mul_w;
     wire        inst_mulh_w;
     wire        inst_mulh_wu;
@@ -557,7 +1062,7 @@ module IDreg(
     wire        inst_div_wu;
     wire        inst_mod_w;
     wire        inst_mod_wu;
-//ç³»ç»Ÿè°ƒç”¨å¼‚å¸¸æ”¯æŒæŒ‡ä»¤
+//ÏµÍ³µ÷ÓÃÒì³£Ö§³ÖÖ¸Áî
     wire        inst_csrrd;
     wire        inst_csrwr;
     wire        inst_csrxchg;
@@ -565,11 +1070,11 @@ module IDreg(
     wire        inst_syscall;
     wire        inst_break;
 
-    wire        type_al;        // ç®—æœ¯é€»è¾‘ç±»ï¼Œarithmatic or logic
-    wire        type_ld_st;     // è®¿å­˜ç±»ï¼Œ load or store
-    wire        type_bj;        // åˆ†æ”¯è·³è½¬ç±»ï¼Œbranch or jump
-    wire        type_ex;        // ä¾‹å¤–ç›¸å…³ç±»ï¼Œexception
-    wire        type_else;      // ä¸çŸ¥é“å•¥ç±»
+    wire        type_al;        // ËãÊõÂß¼­Àà£¬arithmatic or logic
+    wire        type_ld_st;     // ·Ã´æÀà£¬ load or store
+    wire        type_bj;        // ·ÖÖ§Ìø×ªÀà£¬branch or jump
+    wire        type_ex;        // ÀıÍâÏà¹ØÀà£¬exception
+    wire        type_else;      // ²»ÖªµÀÉ¶Àà
     
     wire        need_ui5;
     wire        need_ui12;
@@ -766,11 +1271,11 @@ module IDreg(
     assign inst_ertn    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] 
                         & (rk == 5'h0e) & (~|rj) & (~|rd);
 
-    // æŒ‡ä»¤åˆ†ç±»
+    // Ö¸Áî·ÖÀà
     assign type_al    = inst_add_w  | inst_sub_w  | inst_slti   | inst_slt   | inst_sltui  | inst_sltu  |
                         inst_nor    | inst_and    | inst_andi   | inst_or    | inst_ori    | inst_xor   |
                         inst_xori   | inst_sll_w  | inst_slli_w | inst_srl_w | inst_srli_w | inst_sra_w | inst_srai_w | inst_addi_w|
-                        // å¤æ‚ç®—æ•°è¿ç®—
+                        // ¸´ÔÓËãÊıÔËËã
                         inst_mul_w  | inst_mulh_w | inst_mulh_wu| inst_div_w | inst_div_wu | inst_mod_w |
                         inst_mod_wu;
     assign type_ld_st = inst_ld_b   | inst_ld_h   | inst_ld_w   | inst_ld_bu | inst_ld_hu  | inst_st_b  |
@@ -781,7 +1286,7 @@ module IDreg(
                         inst_rdcntid;
     assign type_else  = inst_rdcntvh| inst_rdcntvl| inst_lu12i_w| inst_pcaddul2i; 
 
-    // aluæ“ä½œç è¯‘ç 
+    // alu²Ù×÷ÂëÒëÂë
     assign ds_alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_hu |
                         inst_ld_h  | inst_ld_bu  | inst_ld_b | inst_st_b  | 
                         inst_st_w  | inst_st_h   | inst_jirl | inst_bl    | 
@@ -874,7 +1379,7 @@ module IDreg(
     assign ds_rf_we    = gr_we & ds_valid; 
     assign ds_rf_waddr = dest; 
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
-    //å†™å›ã€è®¿å­˜ã€æ‰§è¡Œé˜¶æ®µä¼ å›æ•°æ®å¤„ç†
+    //Ğ´»Ø¡¢·Ã´æ¡¢Ö´ĞĞ½×¶Î´«»ØÊı¾İ´¦Àí
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
     assign {ms_res_from_mem, ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
@@ -888,7 +1393,7 @@ module IDreg(
     .waddr  (ws_rf_waddr ),
     .wdata  (ws_rf_wdata )
     );
-    // å†²çªï¼šå†™ä½¿èƒ½ + å†™åœ°å€ä¸ä¸º0å·å¯„å­˜å™¨ + å†™åœ°å€ä¸å½“å‰è¯»å¯„å­˜å™¨åœ°å€ç›¸åŒ
+    // ³åÍ»£ºĞ´Ê¹ÄÜ + Ğ´µØÖ·²»Îª0ºÅ¼Ä´æÆ÷ + Ğ´µØÖ·Óëµ±Ç°¶Á¼Ä´æÆ÷µØÖ·ÏàÍ¬
     assign conflict_r1_wb = (|rf_raddr1) & (rf_raddr1 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r2_wb = (|rf_raddr2) & (rf_raddr2 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r1_mem = (|rf_raddr1) & (rf_raddr1 == ms_rf_waddr) & ms_rf_we;
@@ -897,7 +1402,7 @@ module IDreg(
     assign conflict_r2_exe = (|rf_raddr2) & (rf_raddr2 == es_rf_waddr) & es_rf_we;
     assign need_r1         = ~ds_src1_is_pc & (|ds_alu_op);
     assign need_r2         = ~ds_src2_is_imm & (|ds_alu_op);
-    // ç”¨å¯„å­˜å™¨ä¿å­˜å†²çªä¿¡æ¯
+    // ÓÃ¼Ä´æÆ÷±£´æ³åÍ»ĞÅÏ¢
     // always @(posedge clk) begin
     //     if(~ds_ready_go) begin
     //         if(conflict_r1_exe)
@@ -922,7 +1427,7 @@ module IDreg(
     //         conflict_r2_wb_r <= 1'b0;
     //     end
     // end
-    // æ•°æ®å†²çªæ—¶å¤„ç†æœ‰å…ˆåé¡ºåºï¼Œä»¥æœ€åä¸€æ¬¡æ›´æ–°ä¸ºå‡†
+    // Êı¾İ³åÍ»Ê±´¦ÀíÓĞÏÈºóË³Ğò£¬ÒÔ×îºóÒ»´Î¸üĞÂÎª×¼
     assign rj_value  =  conflict_r1_exe ? es_rf_wdata:
                         conflict_r1_mem ? ms_rf_wdata:
                         conflict_r1_wb  ? ws_rf_wdata : rf_rdata1; 
@@ -937,7 +1442,7 @@ module IDreg(
     //                     (conflict_r2_wb |conflict_r2_wb_r)  ? ws_rf_wdata : rf_rdata2; 
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
-    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // è¯»å–çš„æ˜¯exeå†…éƒ¨çš„è®¡æ•°å™¨ï¼ŒéçŠ¶æ€å¯„å­˜å™¨TIDä¸­çš„è®¡æ•°
+    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ¶ÁÈ¡µÄÊÇexeÄÚ²¿µÄ¼ÆÊıÆ÷£¬·Ç×´Ì¬¼Ä´æÆ÷TIDÖĞµÄ¼ÆÊı
 //------------------------------exception relavant--------------------------------------
     assign ds_csr_re    = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid;
     assign ds_csr_we    = inst_csrwr | inst_csrxchg;
@@ -948,7 +1453,7 @@ module IDreg(
 
     assign ds_except_sys  = inst_syscall;
     assign ds_except_brk  = inst_break;
-    assign ds_except_ine  = ~(type_al | type_bj | type_ld_st | type_else | type_ex);
+    assign ds_except_ine  = ~(type_al | type_bj | type_ld_st | type_else | type_ex) & ds_valid;
     assign ds_except_int  = has_int;
     assign ds_except_zip  = {ds_except_adef, ds_except_ine, // 14+32+32+1+1 
                              ds_except_int , ds_except_brk, ds_except_sys, inst_ertn};    // 1+1+1+1+1
@@ -1058,7 +1563,7 @@ module EXEreg(
              es_csr_re, es_rf_we, es_rf_waddr, es_rkd_value, es_pc, es_st_op_zip, 
              es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp} <= ds2es_bus;    
     end
-    // æŒ‡ä»¤æ‹†åŒ…
+    // Ö¸Áî²ğ°ü
     assign {op_ld_h, op_ld_hu, op_ld_w} = es_ld_inst_zip[2:0];
     assign {op_st_b, op_st_h, op_st_w} = es_st_op_zip;
     assign {rd_cnt_h, rd_cnt_l} = es_cnt_inst_zip;
@@ -1068,7 +1573,7 @@ module EXEreg(
         if(~resetn)
             es_timer_cnt <= 64'b0;
         else   
-            es_timer_cnt <= es_timer_cnt + 1'b1;
+            es_timer_cnt <= es_timer_cnt + 1'b0;
     end
     
 //------------------------------exe and mem state interface---------------------------------------
@@ -1112,11 +1617,11 @@ module EXEreg(
     assign data_sram_wdata[31:24]   = op_st_w ? es_rkd_value[31:24] : 
                                       op_st_h ? es_rkd_value[15: 8] : es_rkd_value[ 7: 0];
 //------------------------------regfile relevant---------------------------------------
-    // exeé˜¶æ®µæš‚æ—¶é€‰å‡ºçš„å†™å›æ•°æ®
+    // exe½×¶ÎÔİÊ±Ñ¡³öµÄĞ´»ØÊı¾İ
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
                               {32{~rd_cnt_h & ~rd_cnt_l}} & es_alu_result;
-    //æš‚æ—¶è®¤ä¸ºes_rf_wdataç­‰äºes_rf_result_tmp,åªæœ‰åœ¨ldç±»æŒ‡ä»¤éœ€è¦ç‰¹æ®Šå¤„ç†
+    //ÔİÊ±ÈÏÎªes_rf_wdataµÈÓÚes_rf_result_tmp,Ö»ÓĞÔÚldÀàÖ¸ÁîĞèÒªÌØÊâ´¦Àí
     assign es_rf_zip       = {es_csr_re & es_valid, es_res_from_mem & es_valid, es_rf_we & es_valid, es_rf_waddr, es_rf_result_tmp};    
 endmodule
 
@@ -1165,7 +1670,7 @@ module MEMreg(
     wire        ms_wait_data_ok;
     reg         ms_wait_data_ok_r;
     reg  [31:0] ms_data_buf;
-    reg         data_buf_valid;  // åˆ¤æ–­æŒ‡ä»¤ç¼“å­˜æ˜¯å¦æœ‰æ•ˆ
+    reg         data_buf_valid;  // ÅĞ¶ÏÖ¸Áî»º´æÊÇ·ñÓĞĞ§
 //------------------------------state control signal---------------------------------------
     assign ms_wait_data_ok  = ms_wait_data_ok_r & ms_valid & ~wb_ex;
     assign ms_ready_go      = ~ms_wait_data_ok | ms_wait_data_ok & data_sram_data_ok;
@@ -1182,13 +1687,13 @@ module MEMreg(
     assign ms_ex = (|ms_except_zip) & ms_valid; 
     
 //------------------------------data buffer----------------------------------------------
-    // è®¾ç½®å¯„å­˜å™¨ï¼Œæš‚å­˜æ•°æ®ï¼Œå¹¶ç”¨validä¿¡å·è¡¨ç¤ºå…¶å†…æ•°æ®æ˜¯å¦æœ‰æ•ˆ
+    // ÉèÖÃ¼Ä´æÆ÷£¬Ôİ´æÊı¾İ£¬²¢ÓÃvalidĞÅºÅ±íÊ¾ÆäÄÚÊı¾İÊÇ·ñÓĞĞ§
     always @(posedge clk) begin
         if(~resetn) begin
             ms_data_buf <= 32'b0;
             data_buf_valid <= 1'b0;
         end
-        else if(ms2ws_valid & ws_allowin)   // ç¼“å­˜å·²ç»æµå‘ä¸‹ä¸€æµæ°´çº§
+        else if(ms2ws_valid & ws_allowin)   // »º´æÒÑ¾­Á÷ÏòÏÂÒ»Á÷Ë®¼¶
             data_buf_valid <= 1'b0;
         else if(~data_buf_valid & data_sram_data_ok & ms_valid) begin
             ms_data_buf <= data_sram_rdata;
@@ -1208,7 +1713,7 @@ module MEMreg(
         end
     end
 //------------------------------mem and wb state interface---------------------------------------
-    // ç»†ç²’åº¦è¯‘ç 
+    // Ï¸Á£¶ÈÒëÂë
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
     assign shift_rdata   = {24'b0, {32{data_buf_valid}} & ms_data_buf | {32{~data_buf_valid}} & data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
@@ -1306,15 +1811,16 @@ module WBreg(
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
             ws_except_sys, ws_ertn} = ws_except_zip;    // ertn_flush=inst_ertn
     assign ertn_flush = ws_ertn & ws_valid;
-    assign wb_ex = (ws_except_adef | ws_except_int | ws_except_ale |
-                    ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
+    assign wb_ex = (ws_except_adef |                   // ÓÃ´íÎóµØÖ·È¡Ö¸ÒÑ¾­·¢Éú£¬¹Ê²»Óëws_valid¹Ò¹³
+                    ws_except_int  |                    // ÖĞ¶ÏÓÉ×´Ì¬¼Ä´æÆ÷ÖĞµÄ¼ÆÊ±Æ÷²úÉú£¬²»Óëws_valid¹Ò¹³
+                    ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
                        ws_except_ale? `ECODE_ALE: 
                        ws_except_sys? `ECODE_SYS:
                        ws_except_brk? `ECODE_BRK:
                        ws_except_ine? `ECODE_INE:
-                        6'b0;   // æœªåŒ…å«ADEMå’ŒTLBR
+                        6'b0;   // Î´°üº¬ADEMºÍTLBR
     assign wb_esubcode = 9'b0;
 //------------------------------id and ws state interface---------------------------------------
     assign ws_rf_wdata = csr_re ? csr_rvalue : ws_rf_wdata_tmp;
@@ -1327,8 +1833,8 @@ module WBreg(
     assign debug_wb_rf_wnum = ws_rf_waddr;
 endmodule
 
-// 32ä½Boothä¸¤ä½ä¹˜éœ€è¦ç”Ÿæˆ16ä¸ªéƒ¨åˆ†ç§¯
-// 32ä½æ— ç¬¦å·æ•°ä¹˜æ³•â†’34ä½æœ‰ç¬¦å·æ•°ä¹˜æ³•ï¼Œéœ€17ä¸ªéƒ¨åˆ†ç§¯
+// 32Î»BoothÁ½Î»³ËĞèÒªÉú³É16¸ö²¿·Ö»ı
+// 32Î»ÎŞ·ûºÅÊı³Ë·¨¡ú34Î»ÓĞ·ûºÅÊı³Ë·¨£¬Ğè17¸ö²¿·Ö»ı
 module Adder (
     input   [63:0] in1,
     input   [63:0] in2,
@@ -1365,11 +1871,11 @@ module Wallace_Mul (
     wire [16:0] sel_neg_2x_val;
     wire [16:0] sel_0_val;
     wire [18:0] debug;
-    // æ‰©å±•æˆ34ä½ä»¥å…¼å®¹æ— ç¬¦å·æ•°ä¹˜æ³•ï¼ˆå¶æ•°ä½æ˜“äºå¤„ç†ï¼‰
+    // À©Õ¹³É34Î»ÒÔ¼æÈİÎŞ·ûºÅÊı³Ë·¨£¨Å¼ÊıÎ»Ò×ÓÚ´¦Àí£©
     wire [33:0] B_r;
     wire [33:0] B_m;
     wire [33:0] B_l;
-    wire [63:0] P [16:0];   // æœªå¯¹é½çš„éƒ¨åˆ†ç§¯
+    wire [63:0] P [16:0];   // Î´¶ÔÆëµÄ²¿·Ö»ı
 
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -1391,7 +1897,7 @@ module Wallace_Mul (
     assign sel_2x      = (~B_l & B_m & B_r);                         // 011
     assign sel_0       = (B_l & B_m & B_r) | (~B_l & ~B_m & ~B_r);     // 000, 111
 
-    // å¥‡æ•°ä½æ‰æ˜¯æœ‰æ•ˆçš„é€‰å–ä¿¡å·
+    // ÆæÊıÎ»²ÅÊÇÓĞĞ§µÄÑ¡È¡ĞÅºÅ
     assign sel_x_val    = { sel_x[32], sel_x[30], sel_x[28], sel_x[26], sel_x[24],
                             sel_x[22], sel_x[20], sel_x[18], sel_x[16],
                             sel_x[14], sel_x[12], sel_x[10], sel_x[ 8],
@@ -1412,9 +1918,9 @@ module Wallace_Mul (
                             sel_0[22], sel_0[20], sel_0[18], sel_0[16],
                             sel_0[14], sel_0[12], sel_0[10], sel_0[ 8],
                             sel_0[ 6], sel_0[ 4], sel_0[ 2], sel_0[ 0]}; 
-    // debugä¿¡å·åº”ä¸º0FFFF                                                                                              
+    // debugĞÅºÅÓ¦Îª0FFFF                                                                                              
     assign debug        = sel_x_val + sel_neg_2x_val + sel_neg_x_val + sel_2x_val + sel_0_val;
-    // åå…­ä¸ªæœªå¯¹é½çš„éƒ¨åˆ†ç§¯
+    // Ê®Áù¸öÎ´¶ÔÆëµÄ²¿·Ö»ı
     assign {P[16], P[15], P[14], P[13], P[12],
             P[11], P[10], P[ 9], P[ 8],
             P[ 7], P[ 6], P[ 5], P[ 4],
@@ -1523,6 +2029,7 @@ module Wallace_Mul (
     );
     assign level_3[4] = level_2[6];
     assign level_3[5] = level_2[7];
+//-----------------------------------------Á÷Ë®¼¶ÇĞ·Ö-------------------------------------------
     
 //-----------------------------------------Level 4--------------------------------------------- 
     wire [63:0] level_4 [3:0];
@@ -1559,7 +2066,7 @@ module Wallace_Mul (
         .C(level_6[0]),
         .S(level_6[1])
     );
-//-----------------------------------------æµæ°´çº§åˆ‡åˆ†-------------------------------------------
+//-----------------------------------------Á÷Ë®¼¶ÇĞ·Ö-------------------------------------------
     reg  [63:0] level_6_r [1:0];
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -1575,11 +2082,11 @@ module Div(
     input  wire    resetn,
     input  wire    div,
     input  wire    div_signed,
-    input  wire [31:0] x,   //è¢«é™¤æ•°
-    input  wire [31:0] y,   //é™¤æ•°
-    output wire [31:0] s,   //å•†
-    output wire [31:0] r,   //ä½™æ•°
-    output wire    complete //é™¤æ³•å®Œæˆä¿¡å·
+    input  wire [31:0] x,   //±»³ıÊı
+    input  wire [31:0] y,   //³ıÊı
+    output wire [31:0] s,   //ÉÌ
+    output wire [31:0] r,   //ÓàÊı
+    output wire    complete //³ı·¨Íê³ÉĞÅºÅ
 );
 
     wire        sign_s;
@@ -1591,17 +2098,17 @@ module Div(
     reg  [63:0] x_pad;
     reg  [32:0] y_pad;
     reg  [31:0] s_r;
-    reg  [32:0] r_r;    // å½“å‰çš„ä½™æ•°
+    reg  [32:0] r_r;    // µ±Ç°µÄÓàÊı
     reg  [ 5:0] counter;
 
-// 1.ç¡®å®šç¬¦å·ä½
+// 1.È·¶¨·ûºÅÎ»
     assign sign_s = (x[31]^y[31]) & div_signed;
     assign sign_r = x[31] & div_signed;
     assign abs_x  = (div_signed & x[31]) ? (~x+1'b1): x;
     assign abs_y  = (div_signed & y[31]) ? (~y+1'b1): y;
-// 2.å¾ªç¯è¿­ä»£å¾—åˆ°å•†å’Œä½™æ•°ç»å¯¹å€¼
+// 2.Ñ­»·µü´úµÃµ½ÉÌºÍÓàÊı¾ø¶ÔÖµ
     assign complete = counter == 6'd33;
-    //åˆå§‹åŒ–è®¡æ•°å™¨
+    //³õÊ¼»¯¼ÆÊıÆ÷
     always @(posedge div_clk) begin
         if(~resetn) begin
             counter <= 6'b0;
@@ -1613,7 +2120,7 @@ module Div(
                 counter <= counter + 1'b1;
         end
     end
-    //å‡†å¤‡æ“ä½œæ•°,counter=0
+    //×¼±¸²Ù×÷Êı,counter=0
     always @(posedge div_clk) begin
         if(~resetn)
             {x_pad, y_pad} <= {64'b0, 33'b0};
@@ -1623,9 +2130,9 @@ module Div(
         end
     end
 
-    //æ±‚è§£å½“å‰è¿­ä»£çš„å‡æ³•ç»“æœ
-    assign pre_r = r_r - y_pad;                     //æœªæ¢å¤ä½™æ•°çš„ç»“æœ
-    assign recover_r = pre_r[32] ? r_r : pre_r;     //æ¢å¤ä½™æ•°çš„ç»“æœ
+    //Çó½âµ±Ç°µü´úµÄ¼õ·¨½á¹û
+    assign pre_r = r_r - y_pad;                     //Î´»Ö¸´ÓàÊıµÄ½á¹û
+    assign recover_r = pre_r[32] ? r_r : pre_r;     //»Ö¸´ÓàÊıµÄ½á¹û
     always @(posedge div_clk) begin
         if(~resetn) 
             s_r <= 32'b0;
@@ -1637,13 +2144,13 @@ module Div(
         if(~resetn)
             r_r <= 33'b0;
         if(div & ~complete) begin
-            if(~|counter)   //ä½™æ•°åˆå§‹åŒ–
+            if(~|counter)   //ÓàÊı³õÊ¼»¯
                 r_r <= {32'b0, abs_x[31]};
             else
                 r_r <=  (counter == 32) ? recover_r : {recover_r, x_pad[31 - counter]};
         end
     end
-// 3.è°ƒæ•´æœ€ç»ˆå•†å’Œä½™æ•°
+// 3.µ÷Õû×îÖÕÉÌºÍÓàÊı
     assign s = div_signed & sign_s ? (~s_r+1'b1) : s_r;
     assign r = div_signed & sign_r ? (~r_r+1'b1) : r_r;
 endmodule
@@ -1651,88 +2158,88 @@ endmodule
 module csr(
     input  wire          clk       ,
     input  wire          reset     ,
-    // è¯»ç«¯å£
+    // ¶Á¶Ë¿Ú
     input  wire          csr_re    ,
     input  wire [13:0]   csr_num   ,
     output wire [31:0]   csr_rvalue,
-    // å†™ç«¯å£
+    // Ğ´¶Ë¿Ú
     input  wire          csr_we    ,
     input  wire [31:0]   csr_wmask ,
     input  wire [31:0]   csr_wvalue,
-    // ä¸ç¡¬ä»¶ç”µè·¯äº¤äº’çš„æ¥å£ä¿¡å·
-    output wire [31:0]   ex_entry  , //é€å¾€pre-IFçš„å¼‚å¸¸å…¥å£åœ°å€
-    output wire [31:0]   ertn_entry, //é€å¾€pre-IFçš„è¿”å›å…¥å£åœ°å€
-    output wire          has_int   , //é€å¾€IDé˜¶æ®µçš„ä¸­æ–­æœ‰æ•ˆä¿¡å·
-    input  wire          ertn_flush, //æ¥è‡ªWBé˜¶æ®µçš„ertnæŒ‡ä»¤æ‰§è¡Œæœ‰æ•ˆä¿¡å·
-    input  wire          wb_ex     , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸å¤„ç†è§¦å‘ä¿¡å·
-    input  wire [ 5:0]   wb_ecode  , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹
-    input  wire [ 8:0]   wb_esubcode,//æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹è¾…åŠ©ç 
-    input  wire [31:0]   wb_vaddr   ,//æ¥è‡ªWBé˜¶æ®µçš„è®¿å­˜åœ°å€
-    input  wire [31:0]   wb_pc       //å†™å›çš„è¿”å›åœ°å€
+    // ÓëÓ²¼şµçÂ·½»»¥µÄ½Ó¿ÚĞÅºÅ
+    output wire [31:0]   ex_entry  , //ËÍÍùpre-IFµÄÒì³£Èë¿ÚµØÖ·
+    output wire [31:0]   ertn_entry, //ËÍÍùpre-IFµÄ·µ»ØÈë¿ÚµØÖ·
+    output wire          has_int   , //ËÍÍùID½×¶ÎµÄÖĞ¶ÏÓĞĞ§ĞÅºÅ
+    input  wire          ertn_flush, //À´×ÔWB½×¶ÎµÄertnÖ¸ÁîÖ´ĞĞÓĞĞ§ĞÅºÅ
+    input  wire          wb_ex     , //À´×ÔWB½×¶ÎµÄÒì³£´¦Àí´¥·¢ĞÅºÅ
+    input  wire [ 5:0]   wb_ecode  , //À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ
+    input  wire [ 8:0]   wb_esubcode,//À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ¸¨ÖúÂë
+    input  wire [31:0]   wb_vaddr   ,//À´×ÔWB½×¶ÎµÄ·Ã´æµØÖ·
+    input  wire [31:0]   wb_pc       //Ğ´»ØµÄ·µ»ØµØÖ·
 );
     wire [ 7: 0] hw_int_in;
     wire         ipi_int_in;
-    // å½“å‰æ¨¡å¼ä¿¡æ¯
+    // µ±Ç°Ä£Ê½ĞÅÏ¢
     wire [31: 0] csr_crmd_data;
-    reg  [ 1: 0] csr_crmd_plv;      //CRMDçš„PLVåŸŸï¼Œå½“å‰ç‰¹æƒç­‰çº§
-    reg          csr_crmd_ie;       //CRMDçš„å…¨å±€ä¸­æ–­ä½¿èƒ½ä¿¡å·
-    reg          csr_crmd_da;       //CRMDçš„ç›´æ¥åœ°å€ç¿»è¯‘ä½¿èƒ½
+    reg  [ 1: 0] csr_crmd_plv;      //CRMDµÄPLVÓò£¬µ±Ç°ÌØÈ¨µÈ¼¶
+    reg          csr_crmd_ie;       //CRMDµÄÈ«¾ÖÖĞ¶ÏÊ¹ÄÜĞÅºÅ
+    reg          csr_crmd_da;       //CRMDµÄÖ±½ÓµØÖ··­ÒëÊ¹ÄÜ
     reg          csr_crmd_pg;
     reg  [ 6: 5] csr_crmd_datf;
     reg  [ 8: 7] csr_crmd_datm;
     // reg  [31: 9] csr_crmd_r0;
 
-    // ä¾‹å¤–å‰æ¨¡å¼ä¿¡æ¯
+    // ÀıÍâÇ°Ä£Ê½ĞÅÏ¢
     wire [31: 0] csr_prmd_data;
-    reg  [ 1: 0] csr_prmd_pplv;     //CRMDçš„PLVåŸŸæ—§å€¼
-    reg          csr_prmd_pie;      //CRMDçš„IEåŸŸæ—§å€¼
+    reg  [ 1: 0] csr_prmd_pplv;     //CRMDµÄPLVÓò¾ÉÖµ
+    reg          csr_prmd_pie;      //CRMDµÄIEÓò¾ÉÖµ
 
-    // ä¾‹å¤–æ§åˆ¶
-    wire [31: 0] csr_ecfg_data;     // ä¿ç•™ä½31:13
-    reg  [12: 0] csr_ecfg_lie;      //å±€éƒ¨ä¸­æ–­ä½¿èƒ½ä½
+    // ÀıÍâ¿ØÖÆ
+    wire [31: 0] csr_ecfg_data;     // ±£ÁôÎ»31:13
+    reg  [12: 0] csr_ecfg_lie;      //¾Ö²¿ÖĞ¶ÏÊ¹ÄÜÎ»
 
-    // ä¾‹å¤–çŠ¶æ€
-    wire [31: 0] csr_estat_data;    // ä¿ç•™ä½15:13, 31
-    reg  [12: 0] csr_estat_is;      // ä¾‹å¤–ä¸­æ–­çš„çŠ¶æ€ä½ï¼ˆ8ä¸ªç¡¬ä»¶ä¸­æ–­+1ä¸ªå®šæ—¶å™¨ä¸­æ–­+1ä¸ªæ ¸é—´ä¸­æ–­+2ä¸ªè½¯ä»¶ä¸­æ–­ï¼‰
-    reg  [ 5: 0] csr_estat_ecode;   // ä¾‹å¤–ç±»å‹ä¸€çº§ç¼–ç 
-    reg  [ 8: 0] csr_estat_esubcode;// ä¾‹å¤–ç±»å‹äºŒçº§ç¼–ç 
+    // ÀıÍâ×´Ì¬
+    wire [31: 0] csr_estat_data;    // ±£ÁôÎ»15:13, 31
+    reg  [12: 0] csr_estat_is;      // ÀıÍâÖĞ¶ÏµÄ×´Ì¬Î»£¨8¸öÓ²¼şÖĞ¶Ï+1¸ö¶¨Ê±Æ÷ÖĞ¶Ï+1¸öºË¼äÖĞ¶Ï+2¸öÈí¼şÖĞ¶Ï£©
+    reg  [ 5: 0] csr_estat_ecode;   // ÀıÍâÀàĞÍÒ»¼¶±àÂë
+    reg  [ 8: 0] csr_estat_esubcode;// ÀıÍâÀàĞÍ¶ş¼¶±àÂë
 
-    // ä¾‹å¤–è¿”å›åœ°å€ERA
+    // ÀıÍâ·µ»ØµØÖ·ERA
     reg  [31: 0] csr_era_data;  // data
 
-    // ä¾‹å¤–å…¥å£åœ°å€eentry
-    wire [31: 0] csr_eentry_data;   // ä¿ç•™ä½5:0
-    reg  [25: 0] csr_eentry_va;     // ä¾‹å¤–ä¸­æ–­å…¥å£é«˜ä½åœ°å€
-    // æ•°æ®ä¿å­˜
+    // ÀıÍâÈë¿ÚµØÖ·eentry
+    wire [31: 0] csr_eentry_data;   // ±£ÁôÎ»5:0
+    reg  [25: 0] csr_eentry_va;     // ÀıÍâÖĞ¶ÏÈë¿Ú¸ßÎ»µØÖ·
+    // Êı¾İ±£´æ
     reg  [31: 0] csr_save0_data;
     reg  [31: 0] csr_save1_data;
     reg  [31: 0] csr_save2_data;
     reg  [31: 0] csr_save3_data;
-    // å‡ºé”™è™šåœ°å€
+    // ³ö´íĞéµØÖ·
     wire         wb_ex_addr_err;
     reg  [31: 0] csr_badv_vaddr;
     wire [31: 0] csr_badv_data;
-    // å®šæ—¶å™¨ç¼–å· 
+    // ¶¨Ê±Æ÷±àºÅ 
     wire [31: 0] csr_tid_data;
     reg  [31: 0] csr_tid_tid;
 
-    // å®šæ—¶å™¨é…ç½®
+    // ¶¨Ê±Æ÷ÅäÖÃ
     wire [31: 0] csr_tcfg_data;
     reg          csr_tcfg_en;
     reg          csr_tcfg_periodic;
     reg  [29: 0] csr_tcfg_initval;
     wire [31: 0] tcfg_next_value;
 
-    // å®šæ—¶å™¨æ•°å€¼
+    // ¶¨Ê±Æ÷ÊıÖµ
     wire [31: 0] csr_tval_data;
     reg  [31: 0] timer_cnt;
-    // å®šæ—¶ä¸­æ–­æ¸…é™¤
+    // ¶¨Ê±ÖĞ¶ÏÇå³ı
     wire [31: 0] csr_ticlr_data;
 
     assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
     assign ex_entry = csr_eentry_data;
     assign ertn_entry = csr_era_data;
-    // CRMDçš„PLVã€IEåŸŸ
+    // CRMDµÄPLV¡¢IEÓò
     always @(posedge clk) begin
         if (reset) begin
             csr_crmd_plv <= 2'b0;
@@ -1754,7 +2261,7 @@ module csr(
         end
     end
 
-    // CRMDçš„DAã€PGã€DATFã€DATMåŸŸ
+    // CRMDµÄDA¡¢PG¡¢DATF¡¢DATMÓò
     always @(posedge clk) begin
         if(reset) begin
             csr_crmd_da   <= 1'b1;
@@ -1774,7 +2281,7 @@ module csr(
         end
     end
 
-    // PRMDçš„PPLVã€PIEåŸŸ
+    // PRMDµÄPPLV¡¢PIEÓò
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_prmd_pplv <= csr_crmd_plv;
@@ -1788,7 +2295,7 @@ module csr(
         end
     end
 
-    // ECFGçš„LIEåŸŸ
+    // ECFGµÄLIEÓò
     always @(posedge clk) begin
         if(reset)
             csr_ecfg_lie <= 13'b0;
@@ -1796,7 +2303,7 @@ module csr(
             csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
                         |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
     end
-    // ESTATçš„ISåŸŸ
+    // ESTATµÄISÓò
     assign hw_int_in = 8'b0;
     assign ipi_int_in= 1'b0;
     always @(posedge clk) begin
@@ -1808,7 +2315,7 @@ module csr(
                                | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
         end
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //ç¡¬ä¸­æ–­
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ó²ÖĞ¶Ï
         csr_estat_is[10] <= 1'b0; 
 
         if (timer_cnt[31:0] == 32'b0) begin
@@ -1817,16 +2324,16 @@ module csr(
         else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
                 && csr_wvalue[`CSR_TICLR_CLR]) 
             csr_estat_is[11] <= 1'b0;
-        csr_estat_is[12] <= ipi_int_in;     // æ ¸é—´ä¸­æ–­
+        csr_estat_is[12] <= ipi_int_in;     // ºË¼äÖĞ¶Ï
     end    
-    // ESTATçš„Ecodeå’ŒEsubCodeåŸŸ
+    // ESTATµÄEcodeºÍEsubCodeÓò
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
         end
     end
-    // ERAçš„PCåŸŸ
+    // ERAµÄPCÓò
     always @(posedge clk) begin
         if(wb_ex)
             csr_era_data <= wb_pc;
@@ -1856,7 +2363,7 @@ module csr(
             csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
                             | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
     end
-    // BADVçš„VAddråŸŸ
+    // BADVµÄVAddrÓò
     assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
     always @(posedge clk) begin
         if (wb_ex && wb_ex_addr_err) begin
@@ -1874,7 +2381,7 @@ module csr(
         end
     end
 
-    // TCFGçš„ENã€Periodicã€InitValåŸŸ
+    // TCFGµÄEN¡¢Periodic¡¢InitValÓò
     always @(posedge clk) begin
         if (reset) 
             csr_tcfg_en <= 1'b0;
@@ -1910,7 +2417,7 @@ module csr(
         end
     end
 
-    // TICLRçš„CLRåŸŸ
+    // TICLRµÄCLRÓò
     assign csr_ticlr_clr = 1'b0;
 
     assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
