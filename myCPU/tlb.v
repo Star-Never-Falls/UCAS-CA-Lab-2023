@@ -110,11 +110,11 @@ reg               tlb_v1   [TLBNUM-1:0];
 generate
     for (idx = 0; idx < TLBNUM; idx = idx + 1)
     begin : MATCH
-        assign match0[idx] = (s0_vppn[18:10] == tlb_vppn[idx][18:10])
-                          && (tlb_ps4MB[idx] || s0_vppn[9:0] == tlb_vppn[idx][9:0])
+        assign match0[idx] = (s0_vppn[18:9] == tlb_vppn[idx][18:9])
+                          && (tlb_ps4MB[idx] || s0_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s0_asid == tlb_asid[idx] || tlb_g[idx]);
-        assign match1[idx] = (s1_vppn[18:10] == tlb_vppn[idx][18:10])
-                          && (tlb_ps4MB[idx] || s1_vppn[9:0] == tlb_vppn[idx][9:0])
+        assign match1[idx] = (s1_vppn[18:9] == tlb_vppn[idx][18:9])
+                          && (tlb_ps4MB[idx] || s1_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s1_asid == tlb_asid[idx] || tlb_g[idx]);
     end
 endgenerate
@@ -136,9 +136,9 @@ assign s0_index   = {$clog2(TLBNUM){match0[ 0]}} & 0
                   | {$clog2(TLBNUM){match0[13]}} & 13
                   | {$clog2(TLBNUM){match0[14]}} & 14
                   | {$clog2(TLBNUM){match0[15]}} & 15;
-assign page_sel_0 = tlb_ps4MB[s0_index] ? tlb_vppn[s0_index][9] : s0_va_bit12; // 4MB页的vppn只有18:10位有效
+assign page_sel_0 = tlb_ps4MB[s0_index] ? s0_vppn[8] : s0_va_bit12; // 4MB页的vppn只有18:9位有效
 assign s0_ppn     = page_sel_0 ? tlb_ppn1[s0_index] : tlb_ppn0[s0_index];
-assign s0_ps      = tlb_ps4MB[s0_index] ? 6'd22 : 6'd12;
+assign s0_ps      = tlb_ps4MB[s0_index] ? 6'd21 : 6'd12;
 assign s0_plv     = page_sel_0 ? tlb_plv1[s0_index] : tlb_plv0[s0_index];
 assign s0_mat     = page_sel_0 ? tlb_mat1[s0_index] : tlb_mat0[s0_index];
 assign s0_d       = page_sel_0 ? tlb_d1[s0_index]   : tlb_d0[s0_index];
@@ -161,9 +161,9 @@ assign s1_index   = {$clog2(TLBNUM){match1[ 0]}} & 0
                   | {$clog2(TLBNUM){match1[13]}} & 13
                   | {$clog2(TLBNUM){match1[14]}} & 14
                   | {$clog2(TLBNUM){match1[15]}} & 15;
-assign page_sel_1 = tlb_ps4MB[s1_index] ? tlb_vppn[s1_index][9] : s1_va_bit12; // 4MB页的vppn只有18:10位有效
+assign page_sel_1 = tlb_ps4MB[s1_index] ? s1_vppn[8] : s1_va_bit12; // 4MB页的vppn只有18:10位有效
 assign s1_ppn     = page_sel_1 ? tlb_ppn1[s1_index] : tlb_ppn0[s1_index];
-assign s1_ps      = tlb_ps4MB[s1_index] ? 6'd22 : 6'd12;
+assign s1_ps      = tlb_ps4MB[s1_index] ? 6'd21 : 6'd12;
 assign s1_plv     = page_sel_1 ? tlb_plv1[s1_index] : tlb_plv0[s1_index];
 assign s1_mat     = page_sel_1 ? tlb_mat1[s1_index] : tlb_mat0[s1_index];
 assign s1_d       = page_sel_1 ? tlb_d1[s1_index]   : tlb_d0[s1_index];
@@ -176,7 +176,7 @@ generate
         assign cond1[idx] = ~tlb_g[idx];
         assign cond2[idx] = tlb_g[idx];
         assign cond3[idx] = s1_asid == tlb_asid[idx];
-        assign cond4[idx] = (s1_vppn[18:10] == tlb_vppn[idx][18:10]) && (tlb_ps4MB[idx] || s1_vppn[9:0] == tlb_vppn[idx][9:0]);
+        assign cond4[idx] = (s1_vppn[18:9] == tlb_vppn[idx][18:9]) && (tlb_ps4MB[idx] || s1_vppn[8:0] == tlb_vppn[idx][8:0]);
         assign inv_match_4[idx] = cond1[idx] && cond3[idx];
         assign inv_match_5[idx] = cond1[idx] && cond3[idx] && cond4[idx];
     end
@@ -198,7 +198,7 @@ always @(posedge clk) begin
     if (we) begin
         tlb_e    [w_index] <= w_e;
         tlb_vppn [w_index] <= w_vppn;
-        tlb_ps4MB[w_index] <= w_ps == 6'd22;
+        tlb_ps4MB[w_index] <= w_ps == 6'd21;
         tlb_asid [w_index] <= w_asid;
         tlb_g    [w_index] <= w_g;
         tlb_ppn0 [w_index] <= w_ppn0;
@@ -217,7 +217,7 @@ end
 // read TLB
 assign r_e    = tlb_e    [r_index];
 assign r_vppn = tlb_vppn [r_index];
-assign r_ps   = tlb_ps4MB[r_index] ? 6'd22 : 6'd12;
+assign r_ps   = tlb_ps4MB[r_index] ? 6'd21 : 6'd12;
 assign r_asid = tlb_asid [r_index];
 assign r_g    = tlb_g    [r_index];
 assign r_ppn0 = tlb_ppn0 [r_index];
