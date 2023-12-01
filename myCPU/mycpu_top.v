@@ -1,47 +1,149 @@
+`ifndef MACRO
+    `define MACRO
+
+//macros for bus
+
+    `define FS2DS_LEN 65
+    `define DS2ES_LEN 261 // from 250 added 11 bits for tlb
+    `define ES2MS_LEN 134 // from 124 added 10 bits for tlb
+    `define MS2WS_LEN 160 // from 150 added 10 bits for tlbl
+
+    `define TLB_CONFLICT_BUS_LEN 16 // added for tlb
+
+//macros for TLB
+
+    `define TLBNUM      16
+    `define TLBNUM_IDX  $clog2(`TLBNUM)
+    `define PALEN       32  // [P]HYSICAL [A]DDRESS [LEN]GTH
+
+//macros for csr
+
+    // macros for csr_num
+    `define CSR_CRMD   14'h00
+    `define CSR_PRMD   14'h01
+    `define CSR_EUEN   14'h02
+    `define CSR_ECFG   14'h04
+    `define CSR_ESTAT  14'h05
+    `define CSR_ERA    14'h06
+    `define CSR_BADV   14'h07
+    `define CSR_EENTRY 14'h0c
+    `define CSR_SAVE0  14'h30
+    `define CSR_SAVE1  14'h31
+    `define CSR_SAVE2  14'h32
+    `define CSR_SAVE3  14'h33
+    `define CSR_TID    14'h40
+    `define CSR_TCFG   14'h41
+    `define CSR_TVAL   14'h42
+    `define CSR_TICLR  14'h44
+    // TLB-related csr_num 
+    `define CSR_TLBIDX      14'h10
+    `define CSR_TLBEHI      14'h11
+    `define CSR_TLBELO0     14'h12
+    `define CSR_TLBELO1     14'h13
+    `define CSR_ASID        14'h18
+    `define CSR_TLBRENTRY   14'h88
+    `define CSR_DMW0        14'h180     // EXP19
+    `define CSR_DMW1        14'h181     // EXP19
+    // TODO: Cache-related csr_num 
+
+    // macros for index
+    `define CSR_CRMD_PLV    1 :0
+    `define CSR_CRMD_IE     2
+    `define CSR_PRMD_PPLV   1 :0
+    `define CSR_PRMD_PIE    2
+    `define CSR_ECFG_LIE    12:0
+    `define CSR_ESTAT_IS10  1 :0
+    `define CSR_ERA_PC      31:0
+    `define CSR_EENTRY_VA   31:6
+    `define CSR_SAVE_DATA   31:0
+    `define CSR_TID_TID     31:0
+    `define CSR_TCFG_EN     0
+    `define CSR_TCFG_PERIOD 1
+    `define CSR_TCFG_INITV  31:2
+    `define CSR_TICLR_CLR   0
+    // macros for index - tlb-related
+    `define CSR_TLBIDX_INDEX `TLBNUM_IDX:0
+    `define CSR_TLBIDX_PS    29:24
+    `define CSR_TLBIDX_NE    31
+    `define CSR_TLBEHI_VPPN  31:13
+    `define CSR_TLBELO_V     0
+    `define CSR_TLBELO_D     1
+    `define CSR_TLBELO_PLV   3:2
+    `define CSR_TLBELO_MAT   5:4
+    `define CSR_TLBELO_G     6
+    `define CSR_TLBELO_PPN   `PALEN-5:8
+    `define CSR_ASID_ASID    9:0
+    `define CSR_ASID_ASIDBITS 23:16
+    `define CSR_TLBRENTRY_PA 31:6
+
+    // macros for ecode and esubcode
+    `define ECODE_INT       6'h00
+    `define ECODE_ADE       6'h08   // ADEM: esubcode=1; ADEF: esubcode=0
+    `define ECODE_ALE       6'h09   
+    `define ECODE_SYS       6'h0B
+    `define ECODE_BRK       6'h0C   
+    `define ECODE_INE       6'h0D
+    `define ECODE_TLBR      6'h3F
+    // exp19: tlb-related ecodes
+    // `define ECODE_TLBR	    6'h3F
+    // `define ECODE_PIL	    6'h01	// LOADÒ³ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½
+    // `define ECODE_PIS   	6'h02	// STOREÒ³ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½
+    // `define ECODE_PIF	    6'h03	// FETCHÒ³ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½
+    // `define ECODE_PME   	6'h04	// Ò³ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½
+    // `define ECODE_PPI		6'h07	// Ò³ï¿½ï¿½È¨ï¿½È¼ï¿½ï¿½ï¿½ï¿½Ï¹ï¿½ï¿½ï¿½ï¿½ï¿½
+
+    // TODO: CACHE-RELATED ECODES
+    
+    `define ESUBCODE_ADEF   9'b00    
+
+
+
+`endif
+
 module mycpu_top(
     input  aclk   ,
     input  aresetn,
     // read req channel
-    output [ 3:0] arid   , // ¶ÁÇëÇóID
-    output [31:0] araddr , // ¶ÁÇëÇóµØÖ·
-    output [ 7:0] arlen  , // ¶ÁÇëÇó´«Êä³¤¶È£¨Êý¾Ý´«ÊäÅÄÊý£©
-    output [ 2:0] arsize , // ¶ÁÇëÇó´«Êä´óÐ¡£¨Êý¾Ý´«ÊäÃ¿ÅÄµÄ×Ö½ÚÊý£©
-    output [ 1:0] arburst, // ´«ÊäÀàÐÍ
-    output [ 1:0] arlock , // Ô­×ÓËø
-    output [ 3:0] arcache, // CacheÊôÐÔ
-    output [ 2:0] arprot , // ±£»¤ÊôÐÔ
-    output        arvalid, // ¶ÁÇëÇóµØÖ·ÓÐÐ§
-    input         arready, // ¶ÁÇëÇóµØÖ·ÎÕÊÖÐÅºÅ
+    output [ 3:0] arid   , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ID
+    output [31:0] araddr , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
+    output [ 7:0] arlen  , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä³¤ï¿½È£ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output [ 2:0] arsize , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½Ã¿ï¿½Äµï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output [ 1:0] arburst, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output [ 1:0] arlock , // Ô­ï¿½ï¿½ï¿½ï¿½
+    output [ 3:0] arcache, // Cacheï¿½ï¿½ï¿½ï¿½
+    output [ 2:0] arprot , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output        arvalid, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ð§
+    input         arready, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
     // read response channel
-    input [ 3:0]  rid    , // ¶ÁÇëÇóIDºÅ£¬Í¬Ò»ÇëÇóridÓëaridÒ»ÖÂ
-    input [31:0]  rdata  , // ¶ÁÇëÇó¶Á³öµÄÊý¾Ý
-    input [ 1:0]  rresp  , // ¶ÁÇëÇóÊÇ·ñÍê³É                        [¿ÉºöÂÔ]
-    input         rlast  , // ¶ÁÇëÇó×îºóÒ»ÅÄÊý¾ÝµÄÖ¸Ê¾ÐÅºÅ           [¿ÉºöÂÔ]
-    input         rvalid , // ¶ÁÇëÇóÊý¾ÝÓÐÐ§
-    output        rready , // Master¶Ë×¼±¸ºÃ½ÓÊÜÊý¾Ý
+    input [ 3:0]  rid    , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½Å£ï¿½Í¬Ò»ï¿½ï¿½ï¿½ï¿½ridï¿½ï¿½aridÒ»ï¿½ï¿½
+    input [31:0]  rdata  , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    input [ 1:0]  rresp  , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½                        [ï¿½Éºï¿½ï¿½ï¿½]
+    input         rlast  , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ö¸Ê¾ï¿½Åºï¿½           [ï¿½Éºï¿½ï¿½ï¿½]
+    input         rvalid , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§
+    output        rready , // Masterï¿½ï¿½×¼ï¿½ï¿½ï¿½Ã½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // write req channel
-    output [ 3:0] awid   , // Ð´ÇëÇóµÄIDºÅ
-    output [31:0] awaddr , // Ð´ÇëÇóµÄµØÖ·
-    output [ 7:0] awlen  , // Ð´ÇëÇó´«Êä³¤¶È£¨ÅÄÊý£©
-    output [ 2:0] awsize , // Ð´ÇëÇó´«ÊäÃ¿ÅÄ×Ö½ÚÊý
-    output [ 1:0] awburst, // Ð´ÇëÇó´«ÊäÀàÐÍ
-    output [ 1:0] awlock , // Ô­×ÓËø
-    output [ 3:0] awcache, // CacheÊôÐÔ
-    output [ 2:0] awprot , // ±£»¤ÊôÐÔ
-    output        awvalid, // Ð´ÇëÇóµØÖ·ÓÐÐ§
-    input         awready, // Slave¶Ë×¼±¸ºÃ½ÓÊÜµØÖ·´«Êä   
+    output [ 3:0] awid   , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½
+    output [31:0] awaddr , // Ð´ï¿½ï¿½ï¿½ï¿½Äµï¿½Ö·
+    output [ 7:0] awlen  , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ä³¤ï¿½È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output [ 2:0] awsize , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+    output [ 1:0] awburst, // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output [ 1:0] awlock , // Ô­ï¿½ï¿½ï¿½ï¿½
+    output [ 3:0] awcache, // Cacheï¿½ï¿½ï¿½ï¿½
+    output [ 2:0] awprot , // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    output        awvalid, // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ð§
+    input         awready, // Slaveï¿½ï¿½×¼ï¿½ï¿½ï¿½Ã½ï¿½ï¿½Üµï¿½Ö·ï¿½ï¿½ï¿½ï¿½   
     // write data channel
-    output [ 3:0] wid    , // Ð´ÇëÇóµÄIDºÅ
-    output [31:0] wdata  , // Ð´ÇëÇóµÄÐ´Êý¾Ý
-    output [ 3:0] wstrb  , // Ð´ÇëÇó×Ö½ÚÑ¡Í¨Î»
-    output        wlast  , // Ð´ÇëÇóµÄ×îºóÒ»ÅÄÊý¾ÝµÄÖ¸Ê¾ÐÅºÅ
-    output        wvalid , // Ð´Êý¾ÝÓÐÐ§
-    input         wready , // Slave¶Ë×¼±¸ºÃ½ÓÊÜÐ´Êý¾Ý´«Êä   
+    output [ 3:0] wid    , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½
+    output [31:0] wdata  , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
+    output [ 3:0] wstrb  , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ñ¡Í¨Î»
+    output        wlast  , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ö¸Ê¾ï¿½Åºï¿½
+    output        wvalid , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§
+    input         wready , // Slaveï¿½ï¿½×¼ï¿½ï¿½ï¿½Ã½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½   
     // write response channel
-    input  [ 3:0] bid    , // Ð´ÇëÇóµÄIDºÅ            [¿ÉºöÂÔ]
-    input  [ 1:0] bresp  , // Ð´ÇëÇóÍê³ÉÐÅºÅ          [¿ÉºöÂÔ]
-    input         bvalid , // Ð´ÇëÇóÏìÓ¦ÓÐÐ§
-    output        bready , // Master¶Ë×¼±¸ºÃ½ÓÊÕÏìÓ¦ÐÅºÅ
+    input  [ 3:0] bid    , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½            [ï¿½Éºï¿½ï¿½ï¿½]
+    input  [ 1:0] bresp  , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½          [ï¿½Éºï¿½ï¿½ï¿½]
+    input         bvalid , // Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Ð§
+    output        bready , // Masterï¿½ï¿½×¼ï¿½ï¿½ï¿½Ã½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Åºï¿½
     // trace debug interface
     output wire [31:0] debug_wb_pc,
     output wire [ 3:0] debug_wb_rf_we,
@@ -167,63 +269,6 @@ module mycpu_top(
 
 endmodule
 
-`ifndef MACRO
-    `define MACRO
-//-----------------------macros for bus---------------------------
-
-    `define FS2DS_LEN 65
-    `define DS2ES_LEN 250
-    `define ES2MS_LEN 124
-    `define MS2WS_LEN 150
-
-//-----------------------macros for csr---------------------------
-    // macros for csr_num
-    `define CSR_CRMD   14'h00
-    `define CSR_PRMD   14'h01
-    `define CSR_EUEN   14'h02
-    `define CSR_ECFG   14'h04
-    `define CSR_ESTAT  14'h05
-    `define CSR_ERA    14'h06
-    `define CSR_BADV   14'h07
-    `define CSR_EENTRY 14'h0c
-    `define CSR_SAVE0  14'h30
-    `define CSR_SAVE1  14'h31
-    `define CSR_SAVE2  14'h32
-    `define CSR_SAVE3  14'h33
-    `define CSR_TID    14'h40
-    `define CSR_TCFG   14'h41
-    `define CSR_TVAL   14'h42
-    `define CSR_TICLR  14'h44
-
-    // macros for index
-    `define CSR_CRMD_PLV    1 :0
-    `define CSR_CRMD_IE     2
-    `define CSR_PRMD_PPLV   1 :0
-    `define CSR_PRMD_PIE    2
-    `define CSR_ECFG_LIE    12:0
-    `define CSR_ESTAT_IS10  1 :0
-    `define CSR_ERA_PC      31:0
-    `define CSR_EENTRY_VA   31:6
-    `define CSR_SAVE_DATA   31:0
-    `define CSR_TID_TID     31:0
-    `define CSR_TCFG_EN     0
-    `define CSR_TCFG_PERIOD 1
-    `define CSR_TCFG_INITV  31:2
-    `define CSR_TICLR_CLR   0
-
-    // macros for ecode and esubcode
-    `define ECODE_INT       6'h00
-    `define ECODE_ADE       6'h08   // ADEM: esubcode=1; ADEF: esubcode=0
-    `define ECODE_ALE       6'h09   
-    `define ECODE_SYS       6'h0B
-    `define ECODE_BRK       6'h0C   
-    `define ECODE_INE       6'h0D
-    `define ECODE_TLBR      6'h3F
-    
-    `define ESUBCODE_ADEF   9'b00
-
-`endif
-
 module mycpu_core(
     input  wire        clk,
     input  wire        resetn,
@@ -287,6 +332,8 @@ module mycpu_core(
     wire [31:0] csr_wvalue;
     wire [31:0] ex_entry;
     wire [31:0] ertn_entry;
+    wire [31:0] ertnentry_refetchtarget;    // (TLB) REUSE ERTN FOR REFETCH 
+
     wire        has_int;
     wire        ertn_flush;
     wire        ms_ex;
@@ -295,8 +342,99 @@ module mycpu_core(
     wire [ 5:0] wb_ecode;
     wire [ 8:0] wb_esubcode;
 
-    // wire ms_wait_data_ok;
+//TLB
 
+    // search port 0 (for fetch)
+    wire [18:0] s0_vppn;
+    wire        s0_va_bit12;
+    wire [ 9:0] s0_asid;
+    wire        s0_found;
+    wire [$clog2(`TLBNUM)-1:0] s0_index;
+    wire [19:0] s0_ppn;
+    wire [ 5:0] s0_ps;
+    wire [ 1:0] s0_plv;
+    wire [ 1:0] s0_mat;
+    wire        s0_d;
+    wire        s0_v;
+
+    // search port 1 (for load/store)
+    wire [18:0] s1_vppn;
+    wire        s1_va_bit12;
+    wire [ 9:0] s1_asid;
+    wire        s1_found;
+    wire [$clog2(`TLBNUM)-1:0] s1_index;
+    wire [19:0] s1_ppn;
+    wire [ 5:0] s1_ps;
+    wire [ 1:0] s1_plv;
+    wire [ 1:0] s1_mat;
+    wire        s1_d;
+    wire        s1_v;
+
+    // invtlb opcode
+    wire        invtlb_valid;
+    wire [ 4:0] invtlb_op;
+
+    // write port
+    wire        inst_wb_tlbfill;
+
+    wire        tlbwe; //w(rite) e(nable)
+    wire [$clog2(`TLBNUM)-1:0] w_index;
+    wire        w_e;
+    wire [18:0] tlbehi_vppn_CSRoutput;
+    wire [ 5:0] w_ps; // 22:4MB 12:4KB
+    wire [ 9:0] asid_CSRoutput;
+    wire        w_g;
+
+    wire [19:0] w_ppn0;
+    wire [ 1:0] w_plv0;
+    wire [ 1:0] w_mat0;
+    wire        w_d0;
+    wire        w_v0;
+
+    wire [19:0] w_ppn1;
+    wire [ 1:0] w_plv1;
+    wire [ 1:0] w_mat1;
+    wire        w_d1;
+    wire        w_v1;
+
+    wire [$clog2(`TLBNUM)-1:0] r_index;
+    wire        r_e;
+    wire [18:0] r_vppn;
+    wire [ 5:0] r_ps;
+    wire [ 9:0] r_asid;
+    wire        r_g;
+
+    wire [19:0] r_ppn0;
+    wire [ 1:0] r_plv0;
+    wire [ 1:0] r_mat0;
+    wire        r_d0;
+    wire        r_v0;
+
+    wire [19:0] r_ppn1;
+    wire [ 1:0] r_plv1;
+    wire [ 1:0] r_mat1;
+    wire        r_d1;
+    wire        r_v1;
+
+    // CSR-TLB
+    wire                      inst_wb_tlbsrch;
+    wire                      wb_tlbsrch_found;
+    wire [`TLBNUM_IDX-1:0]    wb_tlbsrch_idxgot;
+    wire [`TLBNUM_IDX-1:0]    tlbindex_index_CSRoutput;
+
+    wire                      inst_wb_tlbrd;
+    
+    // tlb block
+    wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip;
+    wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip;
+
+    wire                      wb_refetch_flush;
+
+//END OF TLB
+
+    assign ertnentry_refetchtarget = ertn_flush ? ertn_entry :
+                                     debug_wb_pc + 32'd4; // Refetch Target
+        // ertn_flush and wb_refetch_flush will never be valid simultaneously  
     IFreg my_ifReg(
         .clk(clk),
         .resetn(resetn),
@@ -318,9 +456,9 @@ module mycpu_core(
         .fs2ds_bus(fs2ds_bus),
 
         .wb_ex(wb_ex),
-        .ertn_flush(ertn_flush),
+        .ertn_flush(ertn_flush | wb_refetch_flush),
         .ex_entry(ex_entry),
-        .ertn_entry(ertn_entry)
+        .ertn_entry(ertnentry_refetchtarget)
     );
 
     IDreg my_idReg(
@@ -340,8 +478,11 @@ module mycpu_core(
         .ms_rf_zip(ms_rf_zip),
         .es_rf_zip(es_rf_zip),
 
+        .es_tlb_blk_zip(es_tlb_blk_zip),
+        .ms_tlb_blk_zip(ms_tlb_blk_zip),
+
         .has_int(has_int),
-        .wb_ex(wb_ex|ertn_flush)
+        .wb_ex(wb_ex|ertn_flush|wb_refetch_flush)
     );
 
     EXEreg my_exeReg(
@@ -355,6 +496,7 @@ module mycpu_core(
         .ms_allowin(ms_allowin),
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
+        .es_tlb_blk_zip(es_tlb_blk_zip),
         .es2ms_valid(es2ms_valid),
         // .ms_wait_data_ok(ms_wait_data_ok),
         
@@ -367,7 +509,23 @@ module mycpu_core(
         .data_sram_addr_ok(data_sram_addr_ok),
 
         .ms_ex(ms_ex),
-        .wb_ex(wb_ex|ertn_flush)
+        .wb_ex(wb_ex|ertn_flush|wb_refetch_flush),
+
+        .invtlb_op   (invtlb_op),
+        .inst_invtlb (invtlb_valid),
+        .s1_vppn     (s1_vppn),
+        .s1_va_bit12 (s1_va_bit12),
+        .s1_asid     (s1_asid),
+        .s1_found    (s1_found  ),
+        .s1_index    (s1_index  ),
+        .s1_ppn      (s1_ppn    ),
+        .s1_ps       (s1_ps     ),
+        .s1_plv      (s1_plv    ),
+        .s1_mat      (s1_mat    ),
+        .s1_d        (s1_d      ),
+        .s1_v        (s1_v      ),
+        .tlbehi_vppn_CSRoutput(tlbehi_vppn_CSRoutput),
+        .asid_CSRoutput(asid_CSRoutput)
     );
 
     MEMreg my_memReg(
@@ -377,6 +535,7 @@ module mycpu_core(
         .ms_allowin(ms_allowin),
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
+        .ms_tlb_blk_zip(ms_tlb_blk_zip),
         .es2ms_valid(es2ms_valid),
         // .ms_wait_data_ok(ms_wait_data_ok),
         
@@ -389,7 +548,7 @@ module mycpu_core(
         .data_sram_rdata(data_sram_rdata),
 
         .ms_ex(ms_ex),
-        .wb_ex(wb_ex|ertn_flush)
+        .wb_ex(wb_ex|ertn_flush|wb_refetch_flush)
     ) ;
 
     WBreg my_wbReg(
@@ -419,7 +578,15 @@ module mycpu_core(
         .wb_pc      (wb_pc     ),
         .wb_vaddr   (wb_vaddr  ),
         .wb_ecode   (wb_ecode  ),
-        .wb_esubcode(wb_esubcode)
+        .wb_esubcode(wb_esubcode),
+
+        .inst_wb_tlbfill(inst_wb_tlbfill),
+        .inst_wb_tlbsrch(inst_wb_tlbsrch),
+        .tlbwe      (tlbwe),
+        .inst_wb_tlbrd(inst_wb_tlbrd),
+        .wb_tlbsrch_found(wb_tlbsrch_found),
+        .wb_tlbsrch_idxgot(wb_tlbsrch_idxgot),
+        .wb_refetch_flush(wb_refetch_flush)
     );
 
     csr u_csr(
@@ -434,353 +601,132 @@ module mycpu_core(
 
         .has_int    (has_int   ),
         .ex_entry   (ex_entry  ),
-        .ertn_entry (ertn_entry),
+        .ertn_entry (ertn_entry),// TODO: ï¿½ï¿½ERTN_ENTRYï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Refetchï¿½Ä²ï¿½ï¿½ï¿½
         .ertn_flush (ertn_flush),
         .wb_ex      (wb_ex     ),
         .wb_pc      (wb_pc     ),
         .wb_vaddr   (wb_vaddr  ),
         .wb_ecode   (wb_ecode  ),
-        .wb_esubcode(wb_esubcode)
+        .wb_esubcode(wb_esubcode),
+
+        // CSR-TLB
+        .inst_wb_tlbsrch(inst_wb_tlbsrch),
+        .tlbsrch_found(wb_tlbsrch_found), //EXï¿½ï¿½ï¿½É£ï¿½WBÐ´ï¿½ë£¬ï¿½ï¿½Í¬
+        .tlbsrch_idxgot(wb_tlbsrch_idxgot),
+        .tlbindex_index_CSRoutput(tlbindex_index_CSRoutput),
+
+        .inst_wb_tlbrd(inst_wb_tlbrd),
+
+        .tlbread_e  (r_e), 
+        .tlbread_ps (r_ps),
+        .tlbread_vppn(r_vppn),
+        .tlbread_asid(r_asid),
+        .tlbread_g  (r_g),
+
+        .tlbread_ppn0(r_ppn0),
+        .tlbread_plv0(r_plv0),
+        .tlbread_mat0(r_mat0),
+        .tlbread_d0 (r_d0),
+        .tlbread_v0 (r_v0),
+
+        .tlbread_ppn1(r_ppn1),
+        .tlbread_plv1(r_plv1),
+        .tlbread_mat1(r_mat1),
+        .tlbread_d1(r_d1),
+        .tlbread_v1(r_v1),
+
+        .tlbwr_e	(w_e),
+        .tlbwr_ps	(w_ps),
+        .tlbehi_vppn_CSRoutput(tlbehi_vppn_CSRoutput),
+        .asid_CSRoutput(asid_CSRoutput),
+        .tlbwr_g	(w_g),
+
+        .tlbwr_ppn0	(w_ppn0),
+        .tlbwr_plv0	(w_plv0),
+        .tlbwr_mat0	(w_mat0),
+        .tlbwr_d0	(w_d0),
+        .tlbwr_v0	(w_v0),
+
+        .tlbwr_ppn1	(w_ppn1),
+        .tlbwr_plv1	(w_plv1),
+        .tlbwr_mat1	(w_mat1),
+        .tlbwr_d1	(w_d1),
+        .tlbwr_v1	(w_v1)
     );
-endmodule
 
+    tlb u_tlb(
+        .clk        (clk       ),
+        .reset      (~resetn   ),
 
-module bridge_sram_axi(
-    input               aclk,
-    input               aresetn,
-    // read req channel
-    output  reg [ 3:0]      arid,
-    output  reg [31:0]      araddr,
-    output  reg [ 7:0]      arlen,
-    output  reg [ 2:0]      arsize,
-    output  reg [ 1:0]      arburst,
-    output  reg [ 1:0]      arlock,
-    output  reg [ 3:0]      arcache,
-    output  reg [ 2:0]      arprot,
-    output              	arvalid,
-    input               	arready,
-    // read response channel
-    input   	[ 3:0]      rid,
-    input   	[31:0]      rdata,
-    input   	[ 1:0]      rresp,
-    input               	rlast,
-    input               	rvalid,
-    output              	rready,
-    // write req channel
-    output  reg [ 3:0]      awid,
-    output  reg [31:0]      awaddr,
-    output  reg [ 7:0]      awlen,
-    output  reg [ 2:0]      awsize,
-    output  reg [ 1:0]      awburst,
-    output  reg [ 1:0]      awlock,
-    output  reg [ 3:0]      awcache,
-    output  reg [ 2:0]      awprot,
-    output              	awvalid,
-    input               	awready,
-    // write data channel
-    output  reg [ 3:0]      wid,
-    output  reg [31:0]      wdata,
-    output  reg [ 3:0]      wstrb,
-    output  reg         	wlast,
-    output              	wvalid,
-    input               	wready,
-    // write response channel
-    input   	[ 3:0]      bid,
-    input   	[ 1:0]      bresp,
-    input               	bvalid,
-    output              	bready,
-    // inst sram interface
-    input               	inst_sram_req,
-    input               	inst_sram_wr,
-    input   	[ 1:0]      inst_sram_size,
-    input   	[31:0]      inst_sram_addr,
-    input   	[ 3:0]      inst_sram_wstrb,
-    input   	[31:0]      inst_sram_wdata,
-    output              inst_sram_addr_ok,
-    output              inst_sram_data_ok,
-    output  [31:0]      inst_sram_rdata,
-    // data sram interface
-    input               	data_sram_req,
-    input               	data_sram_wr,
-    input   	[ 1:0]      data_sram_size,
-    input   	[31:0]      data_sram_addr,
-    input   	[31:0]      data_sram_wdata,
-    input   	[ 3:0]      data_sram_wstrb,
-    output              data_sram_addr_ok,
-    output              data_sram_data_ok,
-    output  [31:0]      data_sram_rdata
-);
-	// ×´Ì¬»ú×´Ì¬¼Ä´æÆ÷
-	reg [4:0] ar_current_state;	// ¶ÁÇëÇó×´Ì¬»ú
-	reg [4:0] ar_next_state;
-	reg [4:0] r_current_state;	// ¶ÁÊý¾Ý×´Ì¬»ú
-	reg [4:0] r_next_state;
-	reg [4:0] w_current_state;	// Ð´ÇëÇóºÍÐ´Êý¾Ý×´Ì¬»ú
-	reg [4:0] w_next_state;
-	reg [4:0] b_current_state;	// Ð´ÏàÓ¦×´Ì¬»ú
-	reg [4:0] b_next_state;
-	// µØÖ·ÒÑ¾­ÎÕÊÖ³É¹¦¶øÎ´ÏìÓ¦µÄÇé¿ö£¬ÐèÒª¼ÆÊý
-	reg [1:0] ar_resp_cnt;
-	reg [1:0] aw_resp_cnt;
-	reg [1:0] wd_resp_cnt;
-	// Êý¾Ý¼Ä´æÆ÷£¬0-Ö¸ÁîSRAM¼Ä´æÆ÷£¬1-Êý¾ÝSRAM¼Ä´æÆ÷£¨¸ù¾ÝidË÷Òý£©
-	reg [31:0] buf_rdata [1:0];
-	// Êý¾ÝÏà¹ØµÄÅÐ¶ÏÐÅºÅ
-	wire read_block;
-	// Èô¸É¼Ä´æÆ÷
-    reg  [ 3:0] rid_r;
+        .s0_vppn    (s0_vppn   ),
+        .s0_va_bit12(s0_va_bit12),
+        .s0_asid    (s0_asid   ),
+        .s0_found   (s0_found  ),
+        .s0_index   (s0_index  ),
+        .s0_ppn     (s0_ppn    ),
+        .s0_ps      (s0_ps     ),
+        .s0_plv     (s0_plv    ),
+        .s0_mat     (s0_mat    ),
+        .s0_d       (s0_d      ),
+        .s0_v       (s0_v      ),
 
-	localparam  IDLE = 5'b1;         //¸÷¸ö×´Ì¬»ú¹²ÓÃIDLE×´Ì¬  
-//--------------------------------state machine for read req channel-------------------------------------------
-    //¶ÁÇëÇóÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
-    localparam  AR_REQ_START  	= 3'b010,
-				AR_REQ_END		= 3'b100;
-	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»úÊ±ÐòÂß¼­
-	always @(posedge aclk) begin
-		if(~aresetn)
-			ar_current_state <= IDLE;
-		else 
-			ar_current_state <= ar_next_state;
-	end
-	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
-	always @(*) begin
-		case(ar_current_state)
-			IDLE:begin
-				if(~aresetn | read_block)
-					ar_next_state = IDLE;
-				else if(data_sram_req & ~data_sram_wr | inst_sram_req & ~inst_sram_wr)
-					ar_next_state = AR_REQ_START;
-				else
-					ar_next_state = IDLE;
-			end
-			AR_REQ_START:begin
-				if(arvalid & arready) 
-					ar_next_state = AR_REQ_END;
-				else 
-					ar_next_state = AR_REQ_START;
-			end
-			AR_REQ_END:begin
-				ar_next_state = IDLE;
-			end
-		endcase
-	end
-//--------------------------------state machine for read response channel-------------------------------------------
-    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
-    localparam  R_DATA_START   	= 3'b010,
-				R_DATA_END		= 3'b100;
-    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ÐòÂß¼­
-	always @(posedge aclk) begin
-		if(~aresetn)
-			r_current_state <= IDLE;
-		else 
-			r_current_state <= r_next_state;
-	end
-	//¶ÁÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
-	always @(*) begin
-		case(r_current_state)
-			IDLE:begin
-				if(aresetn & arvalid & arready | (|ar_resp_cnt))
-					r_next_state = R_DATA_START;
-				else
-					r_next_state = IDLE;
-			end
-			R_DATA_START:begin
-				if(rvalid & rready & rlast) 	// ´«ÊäÍê±Ï
-					r_next_state = R_DATA_END;
-				else
-					r_next_state = R_DATA_START;
-			end
-			R_DATA_END:
-				r_next_state = IDLE;
-			default:
-				r_next_state = IDLE;
-		endcase
-	end
-//--------------------------------state machine for write req & data channel-------------------------------------------
-    //Ð´ÇëÇó&Ð´Êý¾ÝÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
-	localparam  W_REQ_START      		= 5'b00010,
-				W_ADDR_RESP				= 5'b00100,
-				W_DATA_RESP      		= 5'b01000,
-				W_REQ_END				= 5'b10000;
-    //Ð´ÇëÇó&Ð´Êý¾ÝÍ¨µÀ×´Ì¬»úÊ±ÐòÂß¼­
-	always @(posedge aclk) begin
-		if(~aresetn)
-			w_current_state <= IDLE;
-		else 
-			w_current_state <= w_next_state;
-	end
-	//Ð´ÇëÇó&Ð´Êý¾ÝÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
-	always @(*) begin
-		case(w_current_state)
-			IDLE:begin
-				if(~aresetn)
-					w_next_state = IDLE;
-				else if(data_sram_wr)
-					w_next_state = W_REQ_START;
-				else
-					w_next_state = IDLE;
-			end
-			W_REQ_START:
-				if(awvalid & awready & wvalid & wready | (|aw_resp_cnt)&(|wd_resp_cnt))
-					w_next_state = W_REQ_END;
-				else if(awvalid & awready | (|aw_resp_cnt))
-					w_next_state = W_ADDR_RESP;
-				else if(wvalid & wready | (|wd_resp_cnt))
-					w_next_state = W_DATA_RESP;
-				else
-					w_next_state = W_REQ_START;
-			W_ADDR_RESP:begin
-				if(wvalid & wready) 
-					w_next_state = W_REQ_END;
-				else 
-					w_next_state = W_ADDR_RESP;
-			end
-			W_DATA_RESP:begin
-				if(awvalid & awready)
-					w_next_state = W_REQ_END;
-				else
-					w_next_state = W_DATA_RESP;
-			end
-			W_REQ_END:
-				if(bvalid &bvalid)
-					w_next_state = IDLE;
-				else
-					w_next_state = W_REQ_END;
-		endcase
-	end
-//--------------------------------state machine for write response channel-------------------------------------------
-    //Ð´ÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
-    localparam  B_START     = 3'b010,
-				B_END		= 3'b100;
-    //Ð´ÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ÐòÂß¼­
-	always @(posedge aclk) begin
-		if(~aresetn)
-			b_current_state <= IDLE;
-		else 
-			b_current_state <= b_next_state;
-	end
-	//Ð´ÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
-	always @(*) begin
-		case(b_current_state)
-			IDLE:begin
-				if(aresetn & bready)
-					b_next_state = B_START;
-				else
-					b_next_state = IDLE;
-			end
-			B_START:begin
-				if(bready & bvalid) 
-					b_next_state = B_END;
-				else 
-					b_next_state = B_START;
-			end
-			B_END:begin
-				b_next_state = IDLE;
-			end
-		endcase
-	end
-//-----------------------------------------read req channel---------------------------------------
-	assign arvalid = ar_current_state[1];
-	always  @(posedge aclk) begin
-		if(~aresetn) begin
-			arid <= 4'b0;
-			araddr <= 32'b0;
-			arsize <= 3'b0;
-			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// ³£Öµ
-		end
-		else if(ar_current_state[0]) begin	// ¶ÁÇëÇó×´Ì¬»úÎª¿ÕÏÐ×´Ì¬£¬¸üÐÂÊý¾Ý
-			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// Êý¾ÝRAMÇëÇóÓÅÏÈÓÚÖ¸ÁîRAM
-			araddr <= data_sram_req & ~data_sram_wr? data_sram_addr : inst_sram_addr;
-			arsize <= data_sram_req & ~data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
-		end
-	end
+        .s1_vppn    (s1_vppn   ),
+        .s1_va_bit12(s1_va_bit12),
+        .s1_asid    (s1_asid   ),
+        .s1_found   (s1_found  ),
+        .s1_index   (s1_index  ),
+        .s1_ppn     (s1_ppn    ),
+        .s1_ps      (s1_ps     ),
+        .s1_plv     (s1_plv    ),
+        .s1_mat     (s1_mat    ),
+        .s1_d       (s1_d      ),
+        .s1_v       (s1_v      ),
 
-//-----------------------------------------read response channel---------------------------------------
-    always @(posedge aclk) begin
-		if(~aresetn)
-			ar_resp_cnt <= 2'b0;
-		else if(arvalid & arready & rvalid & rready)	// ¶ÁµØÖ·ºÍÊý¾ÝchannelÍ¬Ê±Íê³ÉÎÕÊÖ
-			ar_resp_cnt <= ar_resp_cnt;		
-		else if(arvalid & arready)
-			ar_resp_cnt <= ar_resp_cnt + 1'b1;
-		else if(rvalid & rready)
-			ar_resp_cnt <= ar_resp_cnt - 1'b1;
-	end
-	assign rready = r_current_state[1];
-//-----------------------------------------write req channel---------------------------------------
-	assign awvalid = w_current_state[1] | w_current_state[3];	// W_REQ_START | W_DATA_RESP
+        .invtlb_valid(invtlb_valid),
+        .invtlb_op  (invtlb_op ),
 
-	always  @(posedge aclk) begin
-		if(~aresetn) begin
-			awaddr <= 32'b0;
-			awsize <= 3'b0;
-			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// ³£Öµ
-		end
-		else if(w_current_state[0]) begin	// Ð´ÇëÇó×´Ì¬»úÎª¿ÕÏÐ×´Ì¬£¬¸üÐÂÊý¾Ý
-			awaddr <= data_sram_wr? data_sram_addr : inst_sram_addr;
-			awsize <= data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
-		end
-	end
-//-----------------------------------------write data channel---------------------------------------
-    assign wvalid = w_current_state[1] | w_current_state[2];	// W_REQ_START | W_ADDR_RESP
-	always  @(posedge aclk) begin
-		if(~aresetn) begin
-			wstrb <= 4'b0;
-			wdata <= 32'b0;
-			{wid, wlast} <= {4'b1, 1'b1};	// ³£Öµ
-		end
-		else if(w_current_state[0]) begin	// Ð´ÇëÇó×´Ì¬»úÎª¿ÕÏÐ×´Ì¬£¬¸üÐÂÊý¾Ý
-			wstrb <= data_sram_wstrb;
-			wdata <= data_sram_wdata;
-		end
-	end
-//-----------------------------------------write response channel---------------------------------------
-    assign bready = w_current_state[4];
-	always @(posedge aclk) begin
-		if(~aresetn) begin
-			aw_resp_cnt <= 2'b0;
-		end
-		else if(awvalid & awready)
-			aw_resp_cnt <= aw_resp_cnt + {1'b0, ~(bvalid & bready)};
-		else if(bvalid & bready) 
-			aw_resp_cnt <= aw_resp_cnt - 1'b1;
-	end
+        .inst_wb_tlbfill(inst_wb_tlbfill),
 
-	always @(posedge aclk) begin
-		if(~aresetn) begin
-			wd_resp_cnt <= 2'b0;
-		end
-		else if(wvalid & wready)
-			wd_resp_cnt <= wd_resp_cnt + {1'b0, ~(bvalid & bready)};
-		else if(bvalid & bready) begin
-			wd_resp_cnt <= wd_resp_cnt - 1'b1;
-		end
-	end
-//-----------------------------------------rdata buffer---------------------------------------
-	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// ¶ÁÐ´µØÖ·ÏàÍ¬ÇÒÓÐÐ´²Ù×÷ÇÒÊý¾ÝÎ´Ð´Èë
-	always @(posedge aclk)begin
-		if(!aresetn)
-			{buf_rdata[1], buf_rdata[0]} <= 64'b0;
-		else if(rvalid & rready)
-			buf_rdata[rid] <= rdata;
-	end
-	assign data_sram_rdata = buf_rdata[1];
-	assign data_sram_addr_ok = arid[0] & arvalid & arready | wid[0] & awvalid & awready ; 
-	assign data_sram_data_ok = rid_r[0] & r_current_state[2] | bid[0] & bvalid & bready; 
-	
-	assign inst_sram_rdata = buf_rdata[0];
-	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rreadyµÄÏÂÒ»ÅÄ
-	assign inst_sram_addr_ok = ~arid[0] & arvalid & arready;
+        .we         (tlbwe     ),
+        .w_index    (tlbindex_index_CSRoutput),
+        .w_e        (w_e       ),
+        .w_vppn     (tlbehi_vppn_CSRoutput),
+        .w_ps       (w_ps      ),
+        .w_asid     (asid_CSRoutput),
+        .w_g        (w_g       ),
 
-	// data_ok ²»²ÉÓÃÈçÏÂÊÇÒòÎªÐèÒª´ÓbufferÖÐÄÃÊý¾Ý£¬ÔòÒªµÈµ½ÏÂÒ»ÅÄ
-	// assign inst_sram_data_ok = ~rid[0] & rvalid & rready;
+        .w_ppn0     (w_ppn0    ),
+        .w_plv0     (w_plv0    ),
+        .w_mat0     (w_mat0    ),
+        .w_d0       (w_d0      ),
+        .w_v0       (w_v0      ),
 
-	always @(posedge aclk)  begin
-		if(~aresetn)
-			rid_r <= 4'b0;
-		else if(rvalid & rready)
-			rid_r <= rid;
-	end	
+        .w_ppn1     (w_ppn1    ),
+        .w_plv1     (w_plv1    ),
+        .w_mat1     (w_mat1    ),
+        .w_d1       (w_d1      ),
+        .w_v1       (w_v1      ),
+
+        .r_index    (tlbindex_index_CSRoutput),
+        .r_e        (r_e       ),
+        .r_vppn     (r_vppn    ),
+        .r_ps       (r_ps      ),
+        .r_asid     (r_asid    ),
+        .r_g        (r_g       ),
+
+        .r_ppn0     (r_ppn0    ),
+        .r_plv0     (r_plv0    ),
+        .r_mat0     (r_mat0    ),
+        .r_d0       (r_d0      ),
+        .r_v0       (r_v0      ),
+
+        .r_ppn1     (r_ppn1    ),
+        .r_plv1     (r_plv1    ),
+        .r_mat1     (r_mat1    ),
+        .r_d1       (r_d1      ),
+        .r_v1       (r_v1      )
+    );
+
 endmodule
 
 module IFreg(
@@ -805,9 +751,9 @@ module IFreg(
     output wire [`FS2DS_LEN -1:0]  fs2ds_bus,
     // exception interface
     input  wire         wb_ex,
-    input  wire         ertn_flush,
-    input  wire [31:0]  ex_entry,
-    input  wire [31:0]  ertn_entry
+    input  wire         ertn_flush, // MODIFIED: TLB REFETCH REUSED; FOR DETAILS SEE MYCPU.CORE
+    input  wire [31:0]  ex_entry,   
+    input  wire [31:0]  ertn_entry  // MODIFIED: TLB REFETCH REUSED; FOR DETAILS SEE MYCPU.CORE
 );
     wire        pf_ready_go;
     wire        to_fs_valid;
@@ -834,16 +780,19 @@ module IFreg(
     wire [31:0] fs_inst;
     reg  [31:0] fs_pc;
     reg  [31:0] fs_inst_buf;
-    reg         inst_buf_valid;  // ÅÐ¶ÏÖ¸Áî»º´æÊÇ·ñÓÐÐ§
+    reg         inst_buf_valid;  // ï¿½Ð¶ï¿½Ö¸ï¿½î»ºï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð§
+    reg         inst_sram_addr_ack;
 
     wire        fs_cancel;
     wire        pf_cancel;
-    reg         inst_discard;   // ÅÐ¶ÏcancelÖ®ºóÊÇ·ñÐèÒª¶ªµôÒ»ÌõÖ¸Áî
+    reg         inst_discard;   // ï¿½Ð¶ï¿½cancelÖ®ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ö¸ï¿½ï¿½
 
     wire        fs_except_adef;
 
     assign fs_except_adef = (|fs_pc[1:0]) & fs_valid;
-//------------------------------pre-IF signal---------------------------------------
+
+//pre-IF signal
+
     assign pf_ready_go      = inst_sram_req & inst_sram_addr_ok; 
     assign to_fs_valid      = pf_ready_go & ~pf_cancel & ~pf_block;
     assign seq_pc           = fs_pc + 3'h4;  
@@ -867,7 +816,7 @@ module IFreg(
             br_target_r <= br_target;
             br_taken_r <= 1'b1;
         end
-        // Èô¶ÔÓ¦µØÖ·ÒÑ¾­»ñµÃÁËÀ´×ÔÖ¸ÁîSRAMµÄok£¬ºóÐønextpc²»ÔÙ´Ó¼Ä´æÆ÷ÖÐÈ¡
+        // ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Ö·ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½SRAMï¿½ï¿½okï¿½ï¿½ï¿½ï¿½ï¿½ï¿½nextpcï¿½ï¿½ï¿½Ù´Ó¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½È¡
         else if(pf_ready_go) begin
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
         end
@@ -875,12 +824,24 @@ module IFreg(
     always @(posedge clk) begin
         if(~resetn)
             pf_block <= 1'b0;
-        else if(pf_cancel & ~pf_block & ~axi_arid[0])
+        else if(pf_cancel & ~pf_block & ~axi_arid[0] & ~inst_sram_data_ok)
             pf_block <= 1'b1;
         else if(inst_sram_data_ok)
             pf_block <= 1'b0;
     end
-//------------------------------IF signal---------------------------------------
+
+    // ï¿½Ð¶Ïµï¿½Ç°ï¿½ï¿½Ö·ï¿½Ç·ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ö³É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½reqï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½
+    always @(posedge clk) begin
+        if(~resetn)
+            inst_sram_addr_ack <= 1'b0;
+        else if(pf_ready_go)
+            inst_sram_addr_ack <= 1'b1;
+        else if(inst_sram_data_ok)
+            inst_sram_addr_ack <= 1'b0;
+    end
+
+//IF signal
+
     assign fs_ready_go      = (inst_sram_data_ok | inst_buf_valid) & ~inst_discard;
     assign fs_allowin       = ~fs_valid | fs_ready_go & ds_allowin;     
     assign fs2ds_valid      = fs_valid & fs_ready_go;
@@ -888,31 +849,36 @@ module IFreg(
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
-            fs_valid <= to_fs_valid; // ÔÚreset³·ÏúµÄÏÂÒ»¸öÊ±ÖÓÉÏÉýÑØ²Å¿ªÊ¼È¡Ö¸
+            fs_valid <= to_fs_valid; // ï¿½ï¿½resetï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²Å¿ï¿½Ê¼È¡Ö¸
         else if(fs_cancel)
             fs_valid <= 1'b0;
     end
-//------------------------------inst sram interface---------------------------------------
-    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_block;
+
+//inst sram interface
+
+    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_block & ~inst_sram_addr_ack;
     assign inst_sram_wr     = |inst_sram_wstrb;
     assign inst_sram_wstrb  = 4'b0;
     assign inst_sram_addr   = nextpc;
     assign inst_sram_wdata  = 32'b0;
     assign inst_sram_size   = 3'b0;
-//------------------------------cancel relevant---------------------------------------
+
+//cancel relevant
+
     assign fs_cancel = wb_ex | ertn_flush | br_taken;
-    // assign pf_cancel = 1'b0;       // pre-IFÎÞÐè±»cancel£¬Ô­ÒòÊÇÔÚ¸ø³önextpcÊ±µÄÖµ¶¼ÊÇÕýÈ·µÄ
+    // assign pf_cancel = 1'b0;       // pre-IFï¿½ï¿½ï¿½è±»cancelï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½nextpcÊ±ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
     assign pf_cancel = fs_cancel;
     always @(posedge clk) begin
         if(~resetn)
             inst_discard <= 1'b0;
-        // Á÷Ë®¼¶È¡Ïû£ºµ±pre-IF½×¶Î·¢ËÍ´íÎóµØÖ·ÇëÇóÒÑ±»Ö¸ÁîSRAM½ÓÊÜ or IFÄÚÓÐÓÐÐ§Ö¸ÁîÇÒÕýÔÚµÈ´ýÊý¾Ý·µ»ØÊ±£¬ÐèÒª¶ªÆúÒ»ÌõÖ¸Áî
+        // ï¿½ï¿½Ë®ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pre-IFï¿½×¶Î·ï¿½ï¿½Í´ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ñ±ï¿½Ö¸ï¿½ï¿½SRAMï¿½ï¿½ï¿½ï¿½ or IFï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÚµÈ´ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ö¸ï¿½ï¿½
         else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & inst_sram_req)
             inst_discard <= 1'b1;
         else if(inst_discard & inst_sram_data_ok)
             inst_discard <= 1'b0;
     end
-//------------------------------fs and ds state interface---------------------------------------
+
+//fs and ds state interface
 
     always @(posedge clk) begin
         if(~resetn)
@@ -920,15 +886,15 @@ module IFreg(
         else if(to_fs_valid & fs_allowin)
             fs_pc <= nextpc;
     end
-    // ÉèÖÃ¼Ä´æÆ÷£¬ÔÝ´æÖ¸Áî£¬²¢ÓÃvalidÐÅºÅ±íÊ¾ÆäÄÚÖ¸ÁîÊÇ·ñÓÐÐ§
+    // ï¿½ï¿½ï¿½Ã¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½validï¿½ÅºÅ±ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð§
     always @(posedge clk) begin
         if(~resetn) begin
             fs_inst_buf <= 32'b0;
             inst_buf_valid <= 1'b0;
         end
-        else if(fs2ds_valid & ds_allowin)   // »º´æÒÑ¾­Á÷ÏòÏÂÒ»Á÷Ë®¼¶
+        else if(to_fs_valid & fs_allowin)   // ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½IFï¿½ï¿½
             inst_buf_valid <= 1'b0;
-        else if(fs_cancel)                  // IFÈ¡ÏûºóÐèÒªÇå¿Õµ±Ç°buffer
+        else if(fs_cancel)                  // IFÈ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Õµï¿½Ç°buffer
             inst_buf_valid <= 1'b0;
         else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard) begin
             fs_inst_buf <= fs_inst;
@@ -955,6 +921,8 @@ module IDreg(
     input  wire [37:0] ws_rf_zip, // {ws_rf_we, ws_rf_waddr, ws_rf_wdata}
     input  wire [39:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
     input  wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
+    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip,
+    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip,
     // exception interface
     input  wire        has_int,
     input  wire        wb_ex
@@ -1007,11 +975,11 @@ module IDreg(
     wire [15:0] op_25_22_d;
     wire [ 3:0] op_21_20_d;
     wire [31:0] op_19_15_d;
-//¼ÆÊýÆ÷Ö¸Áî
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
     wire        inst_rdcntid;
     wire        inst_rdcntvl;
     wire        inst_rdcntvh;
-//¼òµ¥ËãÊõÂß¼­ÔËËã
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½
     wire        inst_add_w;
     wire        inst_sub_w;
     wire        inst_slti;
@@ -1032,7 +1000,7 @@ module IDreg(
     wire        inst_sra_w;
     wire        inst_srai_w;
     wire        inst_addi_w;
-//·Ã´æÖ¸Áî
+//ï¿½Ã´ï¿½Ö¸ï¿½ï¿½
     wire        inst_ld_b;
     wire        inst_ld_h;
     wire        inst_ld_w;
@@ -1041,7 +1009,7 @@ module IDreg(
     wire        inst_st_b;
     wire        inst_st_h;
     wire        inst_st_w;
-//×ªÒÆÖ¸Áî
+//×ªï¿½ï¿½Ö¸ï¿½ï¿½
     wire        inst_jirl;
     wire        inst_b;
     wire        inst_bl;
@@ -1054,7 +1022,7 @@ module IDreg(
 
     wire        inst_lu12i_w;
     wire        inst_pcaddul2i;
-//¸´ÔÓËãÊõÂß¼­ÔËËã
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½
     wire        inst_mul_w;
     wire        inst_mulh_w;
     wire        inst_mulh_wu;
@@ -1062,7 +1030,7 @@ module IDreg(
     wire        inst_div_wu;
     wire        inst_mod_w;
     wire        inst_mod_wu;
-//ÏµÍ³µ÷ÓÃÒì³£Ö§³ÖÖ¸Áî
+//ÏµÍ³ï¿½ï¿½ï¿½ï¿½ï¿½ì³£Ö§ï¿½ï¿½Ö¸ï¿½ï¿½
     wire        inst_csrrd;
     wire        inst_csrwr;
     wire        inst_csrxchg;
@@ -1070,11 +1038,12 @@ module IDreg(
     wire        inst_syscall;
     wire        inst_break;
 
-    wire        type_al;        // ËãÊõÂß¼­Àà£¬arithmatic or logic
-    wire        type_ld_st;     // ·Ã´æÀà£¬ load or store
-    wire        type_bj;        // ·ÖÖ§Ìø×ªÀà£¬branch or jump
-    wire        type_ex;        // ÀýÍâÏà¹ØÀà£¬exception
-    wire        type_else;      // ²»ÖªµÀÉ¶Àà
+    wire        type_al;        // ï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½à£¬arithmatic or logic
+    wire        type_ld_st;     // ï¿½Ã´ï¿½ï¿½à£¬ load or store
+    wire        type_bj;        // ï¿½ï¿½Ö§ï¿½ï¿½×ªï¿½à£¬branch or jump
+    wire        type_ex;        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½à£¬exception
+    wire        type_tlb;       // tlb-related instructions
+    wire        type_else;      // ï¿½ï¿½Öªï¿½ï¿½É¶ï¿½ï¿½
     
     wire        need_ui5;
     wire        need_ui12;
@@ -1084,6 +1053,24 @@ module IDreg(
     wire        need_si26;
     wire        src2_is_4;
 
+// TLB
+    wire        inst_tlbsrch;
+    wire        inst_tlbrd;
+    wire        inst_tlbwr;
+    wire        inst_tlbfill;
+    wire        inst_invtlb;
+    wire [ 4:0] invtlb_op;
+    wire        id_refetch_flag;
+    wire [10:0] ds2es_tlb_zip; // ZIPï¿½Åºï¿½
+    wire        es_tlb_blk;///////
+    wire        es_inst_tlbrd;
+    wire [13:0] es_csr_num;
+    wire        es_csr_we;
+    wire        ms_tlb_blk;///////
+    wire        ms_inst_tlbrd;
+    wire [13:0] ms_csr_num;
+    wire        ms_csr_we;
+    wire        tlb_blk;
 
     wire [ 4:0] rf_raddr1;
     wire [31:0] rf_rdata1;
@@ -1139,11 +1126,14 @@ module IDreg(
     wire [ 1:0] ds_cnt_inst_zip;
     wire [78:0] ds_csr_zip; // {ds_csr_num, ds_csr_wmask, ds_csr_wvalue, ds_csr_we}
     wire [ 5:0] ds_except_zip;  // { ds_except_adef, ds_except_ine, ds_except_int, ds_except_brk, ds_except_sys, inst_ertn}
-//------------------------------state control signal---------------------------------------
+
+//state control signal
+
     assign ds_ready_go      = ~ds_stall;
     assign ds_allowin       = ~ds_valid | ds_ready_go & es_allowin; 
     assign ds_stall         = (es_res_from_mem|es_csr_re) & (conflict_r1_exe & need_r1| conflict_r2_exe & need_r2)|
-                              (ms_res_from_mem|ms_csr_re) & (conflict_r1_mem & need_r1| conflict_r2_mem & need_r2);    
+                              (ms_res_from_mem|ms_csr_re) & (conflict_r1_mem & need_r1| conflict_r2_mem & need_r2)|
+                              tlb_blk;    
     assign br_stall         = ds_stall & type_bj;
     assign ds2es_valid      = ds_valid & ds_ready_go;
     always @(posedge clk) begin
@@ -1157,7 +1147,8 @@ module IDreg(
             ds_valid <= fs2ds_valid;
     end
 
-//------------------------------if and id state interface---------------------------------------
+//if and id state interface
+
     always @(posedge clk) begin
         if(~resetn)
             {ds_except_adef, ds_inst, ds_pc} <= 64'b0;
@@ -1183,7 +1174,8 @@ module IDreg(
                         inst_bge || inst_bgeu|| inst_blt|| inst_bltu) ? (ds_pc + br_offs) :
                                                     /*inst_jirl*/ (rj_value + jirl_offs);
     assign br_zip = {br_stall, br_taken, br_target}; 
-//------------------------------decode instruction---------------------------------------
+
+//decode instruction
     
     assign op_31_26  = ds_inst[31:26];
     assign op_25_22  = ds_inst[25:22];
@@ -1271,11 +1263,18 @@ module IDreg(
     assign inst_ertn    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] 
                         & (rk == 5'h0e) & (~|rj) & (~|rd);
 
-    // Ö¸Áî·ÖÀà
+// TLB INSTRUCTIONS
+    assign inst_tlbsrch = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0a;
+    assign inst_tlbrd   = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0b;
+    assign inst_tlbwr   = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0c;
+    assign inst_tlbfill = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0d;
+    assign inst_invtlb  = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h13];
+
+    // Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½
     assign type_al    = inst_add_w  | inst_sub_w  | inst_slti   | inst_slt   | inst_sltui  | inst_sltu  |
                         inst_nor    | inst_and    | inst_andi   | inst_or    | inst_ori    | inst_xor   |
                         inst_xori   | inst_sll_w  | inst_slli_w | inst_srl_w | inst_srli_w | inst_sra_w | inst_srai_w | inst_addi_w|
-                        // ¸´ÔÓËãÊýÔËËã
+                        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                         inst_mul_w  | inst_mulh_w | inst_mulh_wu| inst_div_w | inst_div_wu | inst_mod_w |
                         inst_mod_wu;
     assign type_ld_st = inst_ld_b   | inst_ld_h   | inst_ld_w   | inst_ld_bu | inst_ld_hu  | inst_st_b  |
@@ -1284,9 +1283,10 @@ module IDreg(
                         inst_bgeu   | inst_beq    | inst_bne;
     assign type_ex    = inst_csrrd  | inst_csrwr  | inst_csrxchg| inst_ertn  | inst_syscall| inst_break |
                         inst_rdcntid;
+    assign type_tlb   = inst_tlbfill || inst_tlbrd || inst_tlbsrch || inst_tlbwr || inst_invtlb && invtlb_op < 5'h07;
     assign type_else  = inst_rdcntvh| inst_rdcntvl| inst_lu12i_w| inst_pcaddul2i; 
 
-    // alu²Ù×÷ÂëÒëÂë
+    // aluï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     assign ds_alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_hu |
                         inst_ld_h  | inst_ld_bu  | inst_ld_b | inst_st_b  | 
                         inst_st_w  | inst_st_h   | inst_jirl | inst_bl    | 
@@ -1369,17 +1369,19 @@ module IDreg(
     assign dst_is_rj     = inst_rdcntid;
     assign gr_we         = ~inst_st_w & ~inst_st_h & ~inst_st_b & ~inst_beq  & 
                            ~inst_bne  & ~inst_b    & ~inst_bge  & ~inst_bgeu & 
-                           ~inst_blt  & ~inst_bltu & ~inst_syscall; 
+                           ~inst_blt  & ~inst_bltu & ~inst_syscall &
+                           ~inst_tlbfill & ~inst_tlbrd & ~inst_tlbsrch & ~inst_tlbwr & ~inst_invtlb; 
     assign dest          = dst_is_r1 ? 5'd1 : 
                            dst_is_rj ? rj   : rd;
 
-//------------------------------regfile control---------------------------------------
+//regfile control
+
     assign rf_raddr1 = rj;
     assign rf_raddr2 = ds_src_reg_is_rd ? rd :rk;
     assign ds_rf_we    = gr_we & ds_valid; 
     assign ds_rf_waddr = dest; 
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
-    //Ð´»Ø¡¢·Ã´æ¡¢Ö´ÐÐ½×¶Î´«»ØÊý¾Ý´¦Àí
+    //Ð´ï¿½Ø¡ï¿½ï¿½Ã´æ¡¢Ö´ï¿½Ð½×¶Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
     assign {ms_res_from_mem, ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
@@ -1393,7 +1395,7 @@ module IDreg(
     .waddr  (ws_rf_waddr ),
     .wdata  (ws_rf_wdata )
     );
-    // ³åÍ»£ºÐ´Ê¹ÄÜ + Ð´µØÖ·²»Îª0ºÅ¼Ä´æÆ÷ + Ð´µØÖ·Óëµ±Ç°¶Á¼Ä´æÆ÷µØÖ·ÏàÍ¬
+    // ï¿½ï¿½Í»ï¿½ï¿½Ð´Ê¹ï¿½ï¿½ + Ð´ï¿½ï¿½Ö·ï¿½ï¿½Îª0ï¿½Å¼Ä´ï¿½ï¿½ï¿½ + Ð´ï¿½ï¿½Ö·ï¿½ëµ±Ç°ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Í¬
     assign conflict_r1_wb = (|rf_raddr1) & (rf_raddr1 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r2_wb = (|rf_raddr2) & (rf_raddr2 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r1_mem = (|rf_raddr1) & (rf_raddr1 == ms_rf_waddr) & ms_rf_we;
@@ -1402,7 +1404,7 @@ module IDreg(
     assign conflict_r2_exe = (|rf_raddr2) & (rf_raddr2 == es_rf_waddr) & es_rf_we;
     assign need_r1         = ~ds_src1_is_pc & (|ds_alu_op);
     assign need_r2         = ~ds_src2_is_imm & (|ds_alu_op);
-    // ÓÃ¼Ä´æÆ÷±£´æ³åÍ»ÐÅÏ¢
+    // ï¿½Ã¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½Ï¢
     // always @(posedge clk) begin
     //     if(~ds_ready_go) begin
     //         if(conflict_r1_exe)
@@ -1427,7 +1429,7 @@ module IDreg(
     //         conflict_r2_wb_r <= 1'b0;
     //     end
     // end
-    // Êý¾Ý³åÍ»Ê±´¦ÀíÓÐÏÈºóË³Ðò£¬ÒÔ×îºóÒ»´Î¸üÐÂÎª×¼
+    // ï¿½ï¿½ï¿½Ý³ï¿½Í»Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Èºï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î¸ï¿½ï¿½ï¿½Îª×¼
     assign rj_value  =  conflict_r1_exe ? es_rf_wdata:
                         conflict_r1_mem ? ms_rf_wdata:
                         conflict_r1_wb  ? ws_rf_wdata : rf_rdata1; 
@@ -1442,8 +1444,10 @@ module IDreg(
     //                     (conflict_r2_wb |conflict_r2_wb_r)  ? ws_rf_wdata : rf_rdata2; 
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
-    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ¶ÁÈ¡µÄÊÇexeÄÚ²¿µÄ¼ÆÊýÆ÷£¬·Ç×´Ì¬¼Ä´æÆ÷TIDÖÐµÄ¼ÆÊý
-//------------------------------exception relavant--------------------------------------
+    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½exeï¿½Ú²ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½Ä´ï¿½ï¿½ï¿½TIDï¿½ÐµÄ¼ï¿½ï¿½ï¿½
+
+//exception AND tlb relavant
+
     assign ds_csr_re    = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid;
     assign ds_csr_we    = inst_csrwr | inst_csrxchg;
     assign ds_csr_wmask    = {32{inst_csrxchg}} & rj_value | {32{inst_csrwr}};
@@ -1453,12 +1457,41 @@ module IDreg(
 
     assign ds_except_sys  = inst_syscall;
     assign ds_except_brk  = inst_break;
-    assign ds_except_ine  = ~(type_al | type_bj | type_ld_st | type_else | type_ex) & ds_valid;
+    assign ds_except_ine  = ~(type_al | type_bj | type_ld_st | type_else | type_tlb | type_ex) & ds_valid;
     assign ds_except_int  = has_int;
     assign ds_except_zip  = {ds_except_adef, ds_except_ine, // 14+32+32+1+1 
                              ds_except_int , ds_except_brk, ds_except_sys, inst_ertn};    // 1+1+1+1+1
 
-//------------------------------ds to es interface--------------------------------------
+    assign id_refetch_flag = inst_invtlb || inst_tlbrd || inst_tlbwr || inst_tlbfill;  // ï¿½ï¿½Ç°Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ÒªRefetch
+                      //|| ds_csr_we && (ds_csr_num == `CSR_ASID || ds_csr_num == `CSR_CRMD || ds_csr_num == `CSR_DMW0 || ds_csr_num == `CSR_DMW1);
+                        // Reserved for exp19
+                        // ï¿½ï¿½Êµ×ªï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½È¡CSR.ASID; CSR.CRMD; ds_csr_num == `CSR_DMWï¿½ï¿½ï¿½ï¿½Þ¸Äºï¿½ï¿½ï¿½ï¿½Refetchï¿½ï¿½È·ï¿½ï¿½È¡Ö¸ï¿½ï¿½È·
+    assign ds2es_tlb_zip = {id_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op};
+    assign invtlb_op = ds_inst[4:0];
+
+    //decode block pack
+    assign {es_inst_tlbrd, es_csr_we, es_csr_num} = es_tlb_blk_zip;
+    assign {ms_inst_tlbrd, ms_csr_we, ms_csr_num} = ms_tlb_blk_zip;
+    assign tlb_blk = ms_tlb_blk || es_tlb_blk;
+    assign es_tlb_blk = type_ld_st && (                                 // ï¿½ï¿½Í¨ï¿½Ã´ï¿½ EXP19
+                                        es_inst_tlbrd ||                // tlbrdï¿½ï¿½Ä¶ï¿½CSR.ASID
+                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_CRMD || es_csr_num == `CSR_DMW0 || es_csr_num == `CSR_DMW1)) // ï¿½Þ¸ï¿½CSR.ASIDï¿½ï¿½Ö±ï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½
+    ) || inst_tlbsrch && (                                              // tlbsrchÖ¸ï¿½ï¿½, ï¿½ï¿½ÒªEXï¿½×¶Î¶ï¿½ï¿½ï¿½CSR.ASID TLBEHI
+                                        es_inst_tlbrd || 
+                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI))
+                    );
+    assign ms_tlb_blk = type_ld_st && (                                 // ï¿½ï¿½Í¨ï¿½Ã´ï¿½ EXP19
+                                        ms_inst_tlbrd ||                // tlbrdï¿½ï¿½Ä¶ï¿½CSR.ASID
+                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_CRMD || ms_csr_num == `CSR_DMW0 || ms_csr_num == `CSR_DMW1)) // ï¿½Þ¸ï¿½CSR.ASIDï¿½ï¿½Ö±ï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½
+    ) || inst_tlbsrch && (                                              // tlbsrchÖ¸ï¿½ï¿½, ï¿½ï¿½ÒªEXï¿½×¶Î¶ï¿½ï¿½ï¿½CSR.ASID TLBEHI
+                                        ms_inst_tlbrd || 
+                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI))
+                    );
+
+
+
+//ds to es interface
+
     assign ds2es_bus = {ds_alu_op,          //19 bit
                         ds_res_from_mem,    //1  bit
                         ds_alu_src1,        //32 bit
@@ -1469,7 +1502,8 @@ module IDreg(
                         ds_mem_inst_zip,    //8  bit
                         ds_cnt_inst_zip,    //2  bit
                         ds_csr_zip,         //79 bit
-                        ds_except_zip       //6  bit
+                        ds_except_zip,      //6  bit
+                        ds2es_tlb_zip       //10 bits
                         };
 
 endmodule
@@ -1485,6 +1519,7 @@ module EXEreg(
     input  wire        ms_allowin,
     output wire [`ES2MS_LEN -1:0] es2ms_bus,
     output wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
+    output wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip,
     output wire        es2ms_valid,
     output reg  [31:0] es_pc,    
     // data sram interface
@@ -1497,7 +1532,26 @@ module EXEreg(
     input  wire         data_sram_addr_ok,
     // exception interface
     input  wire        ms_ex,
-    input  wire        wb_ex
+    input  wire        wb_ex,
+
+    // tlb interface
+    output wire [ 4:0] invtlb_op,
+    output wire        inst_invtlb,
+    output wire [18:0] s1_vppn,
+    output wire        s1_va_bit12,
+    output wire [ 9:0] s1_asid,
+
+    input         s1_found,
+    input  [ 3:0] s1_index,
+    input  [19:0] s1_ppn,
+    input  [ 5:0] s1_ps,
+    input  [ 1:0] s1_plv,
+    input  [ 1:0] s1_mat,
+    input         s1_d,
+    input         s1_v,
+
+    input  wire [18:0] tlbehi_vppn_CSRoutput,
+    input  wire [ 9:0] asid_CSRoutput
 );
 
     wire        es_ready_go;
@@ -1539,7 +1593,25 @@ module EXEreg(
     wire [ 6:0] es_except_zip;
     reg  [78:0] es_csr_zip;
     wire        es_mem_req;
-//------------------------------state control signal---------------------------------------
+
+// TLB
+    reg  [10:0] ds2es_tlb_zip; // ZIPï¿½Åºï¿½
+    wire        inst_tlbsrch;
+    wire        inst_tlbrd;
+    wire        inst_tlbwr;
+    wire        inst_tlbfill;
+    wire        es_refetch_flag;
+    // wire        tlbsrch_found;
+    // wire [ 3:0] tlbsrch_idxgot;
+    wire [ 9:0] es2ms_tlb_zip;
+    //csr
+    wire [13:0] es_csr_num;
+    wire        es_csr_we;
+    wire [31:0] es_csr_wmask;
+    wire [31:0] es_csr_wvalue;
+
+//state control signal
+
     assign es_ex            = (|es_except_zip) & es_valid;
     assign es_ready_go      = alu_complete & (~data_sram_req | data_sram_req & data_sram_addr_ok);
     assign es_allowin       = ~es_valid | es_ready_go & ms_allowin;     
@@ -1552,7 +1624,9 @@ module EXEreg(
         else if(es_allowin)
             es_valid <= ds2es_valid; 
     end
-//------------------------------id and exe state interface---------------------------------------
+
+//id and exe state interface
+
     always @(posedge clk) begin
         if(~resetn)
             {es_alu_op, es_res_from_mem, es_alu_src1, es_alu_src2,
@@ -1561,22 +1635,24 @@ module EXEreg(
         else if(ds2es_valid & es_allowin)
             {es_alu_op, es_res_from_mem, es_alu_src1, es_alu_src2,
              es_csr_re, es_rf_we, es_rf_waddr, es_rkd_value, es_pc, es_st_op_zip, 
-             es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp} <= ds2es_bus;    
+             es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp, ds2es_tlb_zip} <= ds2es_bus;    
     end
-    // Ö¸Áî²ð°ü
+    // Ö¸ï¿½ï¿½ï¿½ï¿½
     assign {op_ld_h, op_ld_hu, op_ld_w} = es_ld_inst_zip[2:0];
     assign {op_st_b, op_st_h, op_st_w} = es_st_op_zip;
     assign {rd_cnt_h, rd_cnt_l} = es_cnt_inst_zip;
-//------------------------------exe timer---------------------------------------
+
+//exe timer
     
     always @(posedge clk) begin
         if(~resetn)
             es_timer_cnt <= 64'b0;
         else   
-            es_timer_cnt <= es_timer_cnt + 1'b0;
+            es_timer_cnt <= es_timer_cnt + 1'b1;
     end
     
-//------------------------------exe and mem state interface---------------------------------------
+//exe and mem state interface
+
     assign es_except_ale = ((|es_alu_result[1:0]) & (op_st_w | op_ld_w)|
                             es_alu_result[0] & (op_st_h|op_ld_hu|op_ld_h)) & es_valid;
                             
@@ -1586,9 +1662,12 @@ module EXEreg(
                         es_ld_inst_zip,     // 5  bit
                         es_pc,              // 32 bit
                         es_csr_zip,         // 79 bit
-                        es_except_zip       //  7 bit
+                        es_except_zip,      //  7 bit
+                        es2ms_tlb_zip       // 10 bits
                     };
-//------------------------------alu interface---------------------------------------
+
+//alu interface
+
     alu u_alu(
         .clk            (clk       ),
         .resetn         (resetn & ~wb_ex & ~(ds2es_valid & es_allowin)),
@@ -1599,7 +1678,8 @@ module EXEreg(
         .complete       (alu_complete)
     );
 
-//------------------------------data sram interface---------------------------------------
+//data sram interface
+
     assign es_cancel        = wb_ex;
     assign es_mem_we[0]     = op_st_w | op_st_h & ~es_alu_result[1] | op_st_b & ~es_alu_result[0] & ~es_alu_result[1];   
     assign es_mem_we[1]     = op_st_w | op_st_h & ~es_alu_result[1] | op_st_b &  es_alu_result[0] & ~es_alu_result[1];   
@@ -1616,13 +1696,26 @@ module EXEreg(
     assign data_sram_wdata[23:16]   = op_st_w ? es_rkd_value[23:16] : es_rkd_value[ 7: 0];
     assign data_sram_wdata[31:24]   = op_st_w ? es_rkd_value[31:24] : 
                                       op_st_h ? es_rkd_value[15: 8] : es_rkd_value[ 7: 0];
-//------------------------------regfile relevant---------------------------------------
-    // exe½×¶ÎÔÝÊ±Ñ¡³öµÄÐ´»ØÊý¾Ý
+
+//regfile relevant
+
+    // exeï¿½×¶ï¿½ï¿½ï¿½Ê±Ñ¡ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
                               {32{~rd_cnt_h & ~rd_cnt_l}} & es_alu_result;
-    //ÔÝÊ±ÈÏÎªes_rf_wdataµÈÓÚes_rf_result_tmp,Ö»ÓÐÔÚldÀàÖ¸ÁîÐèÒªÌØÊâ´¦Àí
+    //ï¿½ï¿½Ê±ï¿½ï¿½Îªes_rf_wdataï¿½ï¿½ï¿½ï¿½es_rf_result_tmp,Ö»ï¿½ï¿½ï¿½ï¿½ldï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½â´¦ï¿½ï¿½
     assign es_rf_zip       = {es_csr_re & es_valid, es_res_from_mem & es_valid, es_rf_we & es_valid, es_rf_waddr, es_rf_result_tmp};    
+
+/TLB relevant
+
+    assign {es_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op} = ds2es_tlb_zip;
+    assign {s1_vppn, s1_va_bit12} = inst_invtlb ? es_rkd_value[31:12] :
+                                    inst_tlbsrch ? {tlbehi_vppn_CSRoutput, 1'b0} :
+                                    es_alu_result[31:12]; // Normal Load/Store translation, RESERVED for exp19
+    assign s1_asid       = inst_invtlb ?  es_alu_src1[9:0] : asid_CSRoutput; // alu src1 is rj value
+    assign es2ms_tlb_zip = {es_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, s1_found, s1_index};
+    assign {es_csr_num, es_csr_wmask, es_csr_wvalue, es_csr_we} = es_csr_zip;
+    assign es_tlb_blk_zip = {inst_tlbrd & es_valid, es_csr_we & es_valid, es_csr_num};
 endmodule
 
 module MEMreg(
@@ -1632,6 +1725,7 @@ module MEMreg(
     output wire        ms_allowin,
     input  wire [`ES2MS_LEN -1:0] es2ms_bus,
     input  wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata}
+    output wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip,
     input  wire        es2ms_valid, // {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w}
     // mem and wb state interface
     input  wire        ws_allowin,
@@ -1670,8 +1764,26 @@ module MEMreg(
     wire        ms_wait_data_ok;
     reg         ms_wait_data_ok_r;
     reg  [31:0] ms_data_buf;
-    reg         data_buf_valid;  // ÅÐ¶ÏÖ¸Áî»º´æÊÇ·ñÓÐÐ§
-//------------------------------state control signal---------------------------------------
+    reg         data_buf_valid;  // ï¿½Ð¶ï¿½Ö¸ï¿½î»ºï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð§
+
+// TLB
+    reg  [ 9:0] es2ms_tlb_zip; // ZIPï¿½Åºï¿½
+    wire        inst_tlbsrch;
+    wire        inst_tlbrd;
+    wire        inst_tlbwr;
+    wire        inst_tlbfill;
+    wire        ms_refetch_flag;
+    wire        tlbsrch_found;
+    wire [ 3:0] tlbsrch_idxgot;
+    wire [ 9:0] ms2wb_tlb_zip;
+    //csr
+    wire [13:0] ms_csr_num;
+    wire        ms_csr_we;
+    wire [31:0] ms_csr_wmask;
+    wire [31:0] ms_csr_wvalue;
+
+//state control signal
+
     assign ms_wait_data_ok  = ms_wait_data_ok_r & ms_valid & ~wb_ex;
     assign ms_ready_go      = ~ms_wait_data_ok | ms_wait_data_ok & data_sram_data_ok;
     assign ms_allowin       = ~ms_valid | ms_ready_go & ws_allowin;     
@@ -1684,16 +1796,17 @@ module MEMreg(
         else if(ms_allowin)
             ms_valid <= es2ms_valid; 
     end
-    assign ms_ex = (|ms_except_zip) & ms_valid; 
+    assign ms_ex = (|ms_except_zip) & ~ms_refetch_flag & ms_valid; // Refetch is just like an exception, but not officially one.
     
-//------------------------------data buffer----------------------------------------------
-    // ÉèÖÃ¼Ä´æÆ÷£¬ÔÝ´æÊý¾Ý£¬²¢ÓÃvalidÐÅºÅ±íÊ¾ÆäÄÚÊý¾ÝÊÇ·ñÓÐÐ§
+//data buffer
+
+    // ï¿½ï¿½ï¿½Ã¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½validï¿½ÅºÅ±ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð§
     always @(posedge clk) begin
         if(~resetn) begin
             ms_data_buf <= 32'b0;
             data_buf_valid <= 1'b0;
         end
-        else if(ms2ws_valid & ws_allowin)   // »º´æÒÑ¾­Á÷ÏòÏÂÒ»Á÷Ë®¼¶
+        else if(ms2ws_valid & ws_allowin)   // ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ë®ï¿½ï¿½
             data_buf_valid <= 1'b0;
         else if(~data_buf_valid & data_sram_data_ok & ms_valid) begin
             ms_data_buf <= data_sram_rdata;
@@ -1701,19 +1814,23 @@ module MEMreg(
         end
 
     end
-//------------------------------exe and mem state interface---------------------------------------
+
+//exe and mem state interface
+
     always @(posedge clk) begin
         if(~resetn) begin
             {ms_wait_data_ok_r, ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= {`ES2MS_LEN{1'b0}};
             {ms_csr_re, ms_res_from_mem, ms_rf_we, ms_rf_waddr, ms_rf_result_tmp} <= 39'b0;
         end
         if(es2ms_valid & ms_allowin) begin
-            {ms_wait_data_ok_r, ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip} <= es2ms_bus;
+            {ms_wait_data_ok_r, ms_ld_inst_zip, ms_pc, ms_csr_zip, ms_except_zip, es2ms_tlb_zip} <= es2ms_bus;
             {ms_csr_re, ms_res_from_mem, ms_rf_we, ms_rf_waddr, ms_rf_result_tmp} <= es_rf_zip;
         end
     end
-//------------------------------mem and wb state interface---------------------------------------
-    // Ï¸Á£¶ÈÒëÂë
+
+//mem and wb state interface
+
+    // Ï¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
     assign shift_rdata   = {24'b0, {32{data_buf_valid}} & ms_data_buf | {32{~data_buf_valid}} & data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
@@ -1731,8 +1848,17 @@ module MEMreg(
                         ms_rf_result_tmp,   // 32 bit
                         ms_pc,              // 32 bit
                         ms_csr_zip,         // 79 bit
-                        ms_except_zip       //  7 bit
+                        ms_except_zip,      //  7 bit
+                        ms2wb_tlb_zip       // 10 bits
                     };
+
+
+//tlb
+
+    assign {ms_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, tlbsrch_found, tlbsrch_idxgot} = es2ms_tlb_zip;
+    assign ms2wb_tlb_zip = es2ms_tlb_zip;
+    assign {ms_csr_num, ms_csr_wmask, ms_csr_wvalue, ms_csr_we} = ms_csr_zip;
+    assign ms_tlb_blk_zip = {inst_tlbrd & ms_valid, ms_csr_we & ms_valid, ms_csr_num};
 endmodule
 
 module WBreg(
@@ -1762,7 +1888,16 @@ module WBreg(
     output reg  [31:0] wb_vaddr,
     output reg  [31:0] wb_pc,
     output      [ 5:0] wb_ecode,
-    output      [ 8:0] wb_esubcode
+    output      [ 8:0] wb_esubcode,
+
+    // TLB
+    output wire         inst_wb_tlbfill,
+    output wire         inst_wb_tlbsrch,
+    output wire         tlbwe,
+    output wire         inst_wb_tlbrd,
+    output wire         wb_tlbsrch_found,
+    output wire [`TLBNUM_IDX-1:0] wb_tlbsrch_idxgot,
+    output wire         wb_refetch_flush
 );
     
     wire        ws_ready_go;
@@ -1782,7 +1917,18 @@ module WBreg(
     wire        ws_except_int;
     reg  [ 6:0] ws_except_zip;
     reg  [78:0] ws_csr_zip;
-//------------------------------state control signal---------------------------------------
+
+// TLB
+    reg  [ 9:0] ms2wb_tlb_zip; // ZIPï¿½Åºï¿½
+    // wire        inst_tlbsrch;
+    // wire        inst_tlbrd;
+    wire        inst_wb_tlbwr;
+    // wire        inst_tlbfill;
+    wire        wb_refetch_flag;
+    // wire        tlbsrch_found;
+    // wire [ 3:0] tlbsrch_idxgot;
+
+//state control signal
 
     assign ws_ready_go      = 1'b1;
     assign ws_allowin       = ~ws_valid | ws_ready_go ;     
@@ -1795,24 +1941,27 @@ module WBreg(
             ws_valid <= ms2ws_valid; 
     end
 
-//------------------------------mem and wb state interface---------------------------------------
+//mem and wb state interface
+
     always @(posedge clk) begin
         if(~resetn) begin
             {wb_vaddr, wb_pc, ws_csr_zip, ws_except_zip}  <= {`MS2WS_LEN{1'b0}};
             {csr_re, ws_rf_we_tmp, ws_rf_waddr, ws_rf_wdata_tmp} <= 39'b0;
         end
         if(ms2ws_valid & ws_allowin) begin
-            {wb_vaddr, wb_pc, ws_csr_zip, ws_except_zip}  <= ms2ws_bus;
+            {wb_vaddr, wb_pc, ws_csr_zip, ws_except_zip, ms2wb_tlb_zip}  <= ms2ws_bus;
             {csr_re, ws_rf_we_tmp, ws_rf_waddr, ws_rf_wdata_tmp} <= ms_rf_zip;
         end
     end
-//-----------------------------wb and csr state interface---------------------------------------
+
+//wb and csr state interface
+
     assign {csr_num, csr_wmask, csr_wvalue,  csr_we} = ws_csr_zip & {79{ws_valid}};
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
             ws_except_sys, ws_ertn} = ws_except_zip;    // ertn_flush=inst_ertn
     assign ertn_flush = ws_ertn & ws_valid;
-    assign wb_ex = (ws_except_adef |                   // ÓÃ´íÎóµØÖ·È¡Ö¸ÒÑ¾­·¢Éú£¬¹Ê²»Óëws_valid¹Ò¹³
-                    ws_except_int  |                    // ÖÐ¶ÏÓÉ×´Ì¬¼Ä´æÆ÷ÖÐµÄ¼ÆÊ±Æ÷²úÉú£¬²»Óëws_valid¹Ò¹³
+    assign wb_ex = (ws_except_adef |                   // ï¿½Ã´ï¿½ï¿½ï¿½ï¿½Ö·È¡Ö¸ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê²ï¿½ï¿½ï¿½ws_validï¿½Ò¹ï¿½
+                    ws_except_int  |                    // ï¿½Ð¶ï¿½ï¿½ï¿½×´Ì¬ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ÐµÄ¼ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ws_validï¿½Ò¹ï¿½
                     ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
@@ -1820,21 +1969,585 @@ module WBreg(
                        ws_except_sys? `ECODE_SYS:
                        ws_except_brk? `ECODE_BRK:
                        ws_except_ine? `ECODE_INE:
-                        6'b0;   // Î´°üº¬ADEMºÍTLBR
+                        6'b0;   // Î´ï¿½ï¿½ï¿½ï¿½ADEMï¿½ï¿½TLBR
     assign wb_esubcode = 9'b0;
-//------------------------------id and ws state interface---------------------------------------
+
+//id and ws state interface
+
     assign ws_rf_wdata = csr_re ? csr_rvalue : ws_rf_wdata_tmp;
     assign ws_rf_we  = ws_rf_we_tmp & ws_valid & ~wb_ex;
     assign ws_rf_zip = {ws_rf_we & ws_valid, ws_rf_waddr, ws_rf_wdata};
-//------------------------------trace debug interface---------------------------------------
+
+//trace debug interface
+
     assign debug_wb_pc = wb_pc;
     assign debug_wb_rf_wdata = ws_rf_wdata;
     assign debug_wb_rf_we = {4{ws_rf_we & ws_valid}};
     assign debug_wb_rf_wnum = ws_rf_waddr;
+
+//tlb interface
+
+    assign {wb_refetch_flag, inst_wb_tlbsrch, inst_wb_tlbrd, inst_wb_tlbwr, inst_wb_tlbfill, wb_tlbsrch_found, wb_tlbsrch_idxgot} = ms2wb_tlb_zip;
+    assign tlbwe = (inst_wb_tlbwr || inst_wb_tlbfill) && ws_valid;
+    assign wb_refetch_flush = wb_refetch_flag && ws_valid;
 endmodule
 
-// 32Î»BoothÁ½Î»³ËÐèÒªÉú³É16¸ö²¿·Ö»ý
-// 32Î»ÎÞ·ûºÅÊý³Ë·¨¡ú34Î»ÓÐ·ûºÅÊý³Ë·¨£¬Ðè17¸ö²¿·Ö»ý
+module csr(
+    input  wire          clk       ,
+    input  wire          reset     ,
+    // ï¿½ï¿½ï¿½Ë¿ï¿½
+    input  wire          csr_re    ,
+    input  wire [13:0]   csr_num   ,
+    output wire [31:0]   csr_rvalue,
+    // Ð´ï¿½Ë¿ï¿½
+    input  wire          csr_we    ,
+    input  wire [31:0]   csr_wmask ,
+    input  wire [31:0]   csr_wvalue,
+    // ï¿½ï¿½Ó²ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Ä½Ó¿ï¿½ï¿½Åºï¿½
+    output wire [31:0]   ex_entry  , //ï¿½ï¿½ï¿½ï¿½pre-IFï¿½ï¿½ï¿½ì³£ï¿½ï¿½Úµï¿½Ö·
+    output wire [31:0]   ertn_entry, //ï¿½ï¿½ï¿½ï¿½pre-IFï¿½Ä·ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ö·
+    output wire          has_int   , //ï¿½ï¿½ï¿½ï¿½IDï¿½×¶Îµï¿½ï¿½Ð¶ï¿½ï¿½ï¿½Ð§ï¿½Åºï¿½
+    input  wire          ertn_flush, //ï¿½ï¿½ï¿½ï¿½WBï¿½×¶Îµï¿½ertnÖ¸ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½Ð§ï¿½Åºï¿½
+    input  wire          wb_ex     , //ï¿½ï¿½ï¿½ï¿½WBï¿½×¶Îµï¿½ï¿½ì³£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
+    input  wire [ 5:0]   wb_ecode  , //ï¿½ï¿½ï¿½ï¿½WBï¿½×¶Îµï¿½ï¿½ì³£ï¿½ï¿½ï¿½ï¿½
+    input  wire [ 8:0]   wb_esubcode,//ï¿½ï¿½ï¿½ï¿½WBï¿½×¶Îµï¿½ï¿½ì³£ï¿½ï¿½ï¿½Í¸ï¿½ï¿½ï¿½ï¿½ï¿½
+    input  wire [31:0]   wb_vaddr   ,//ï¿½ï¿½ï¿½ï¿½WBï¿½×¶ÎµÄ·Ã´ï¿½ï¿½Ö·
+    input  wire [31:0]   wb_pc,      //Ð´ï¿½ØµÄ·ï¿½ï¿½Øµï¿½Ö·
+// --- TLB ---
+
+    //tlbsrch
+    input  wire          inst_wb_tlbsrch,
+    input  wire          tlbsrch_found,
+    input  wire [`TLBNUM_IDX-1:0] tlbsrch_idxgot,
+    output wire [`TLBNUM_IDX-1:0] tlbindex_index_CSRoutput,
+        // ï¿½ï¿½ï¿½ï¿½CSRoutputï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½CPU Coreï¿½ï¿½Í³Ò»ï¿½ï¿½ 
+    
+    //tlbrd
+    //Òª×¢ï¿½ï¿½tlbsrchï¿½ï¿½tlbrdÊ¹ï¿½ÃµÄ²ï¿½ï¿½ï¿½Í¬Ò»ï¿½×¶Ë¿ï¿½
+    input  wire         inst_wb_tlbrd,
+
+    input  wire         tlbread_e, // ï¿½ï¿½ï¿½ï¿½Ð§TLBï¿½ï¿½
+    input  wire  [ 5:0] tlbread_ps,
+    input  wire  [18:0] tlbread_vppn,
+    input  wire  [ 9:0] tlbread_asid,
+    input  wire         tlbread_g,
+
+    input  wire  [19:0] tlbread_ppn0,
+    input  wire  [ 1:0] tlbread_plv0,
+    input  wire  [ 1:0] tlbread_mat0,
+    input  wire         tlbread_d0,
+    input  wire         tlbread_v0,
+
+    input  wire  [19:0] tlbread_ppn1,
+    input  wire  [ 1:0] tlbread_plv1,
+    input  wire  [ 1:0] tlbread_mat1,
+    input  wire         tlbread_d1,
+    input  wire         tlbread_v1,
+
+    // tlbwr & refill
+    // input  wire        inst_wb_tlbwr,   //ï¿½ï¿½ï¿½ï¿½Åºï¿½Ã»ï¿½ï¿½,tlbrefillÍ¬ï¿½ï¿½
+    output wire        tlbwr_e,
+    output wire [ 5:0] tlbwr_ps,
+    output wire [18:0] tlbehi_vppn_CSRoutput,
+    output wire [ 9:0] asid_CSRoutput,
+    output wire        tlbwr_g,
+
+    output wire [19:0] tlbwr_ppn0,
+    output wire [ 1:0] tlbwr_plv0,
+    output wire [ 1:0] tlbwr_mat0,
+    output wire        tlbwr_d0,
+    output wire        tlbwr_v0,
+
+    output wire [19:0] tlbwr_ppn1,
+    output wire [ 1:0] tlbwr_plv1,
+    output wire [ 1:0] tlbwr_mat1,
+    output wire        tlbwr_d1,
+    output wire        tlbwr_v1
+);
+    wire [ 7: 0] hw_int_in;
+    wire         ipi_int_in;
+    // ï¿½ï¿½Ç°Ä£Ê½ï¿½ï¿½Ï¢
+    wire [31: 0] csr_crmd_data;
+    reg  [ 1: 0] csr_crmd_plv;      //CRMDï¿½ï¿½PLVï¿½ò£¬µï¿½Ç°ï¿½ï¿½È¨ï¿½È¼ï¿½
+    reg          csr_crmd_ie;       //CRMDï¿½ï¿½È«ï¿½ï¿½ï¿½Ð¶ï¿½Ê¹ï¿½ï¿½ï¿½Åºï¿½
+    reg          csr_crmd_da;       //CRMDï¿½ï¿½Ö±ï¿½Óµï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
+    reg          csr_crmd_pg;
+    reg  [ 6: 5] csr_crmd_datf;
+    reg  [ 8: 7] csr_crmd_datm;
+    // reg  [31: 9] csr_crmd_r0;
+
+    // ï¿½ï¿½ï¿½ï¿½Ç°Ä£Ê½ï¿½ï¿½Ï¢
+    wire [31: 0] csr_prmd_data;
+    reg  [ 1: 0] csr_prmd_pplv;     //CRMDï¿½ï¿½PLVï¿½ï¿½ï¿½Öµ
+    reg          csr_prmd_pie;      //CRMDï¿½ï¿½IEï¿½ï¿½ï¿½Öµ
+
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    wire [31: 0] csr_ecfg_data;     // ï¿½ï¿½ï¿½ï¿½Î»31:13
+    reg  [12: 0] csr_ecfg_lie;      //ï¿½Ö²ï¿½ï¿½Ð¶ï¿½Ê¹ï¿½ï¿½Î»
+
+    // ï¿½ï¿½ï¿½ï¿½×´Ì¬
+    wire [31: 0] csr_estat_data;    // ï¿½ï¿½ï¿½ï¿½Î»15:13, 31
+    reg  [12: 0] csr_estat_is;      // ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ïµï¿½×´Ì¬Î»ï¿½ï¿½8ï¿½ï¿½Ó²ï¿½ï¿½ï¿½Ð¶ï¿½+1ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ð¶ï¿½+1ï¿½ï¿½ï¿½Ë¼ï¿½ï¿½Ð¶ï¿½+2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½
+    reg  [ 5: 0] csr_estat_ecode;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    reg  [ 8: 0] csr_estat_esubcode;// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+
+    // ï¿½ï¿½ï¿½â·µï¿½Øµï¿½Ö·ERA
+    reg  [31: 0] csr_era_data;  // data
+
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ö·eentry
+    wire [31: 0] csr_eentry_data;   // ï¿½ï¿½ï¿½ï¿½Î»5:0
+    reg  [25: 0] csr_eentry_va;     // ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½Ú¸ï¿½Î»ï¿½ï¿½Ö·
+    // ï¿½ï¿½ï¿½Ý±ï¿½ï¿½ï¿½
+    reg  [31: 0] csr_save0_data;
+    reg  [31: 0] csr_save1_data;
+    reg  [31: 0] csr_save2_data;
+    reg  [31: 0] csr_save3_data;
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
+    wire         wb_ex_addr_err;
+    reg  [31: 0] csr_badv_vaddr;
+    wire [31: 0] csr_badv_data;
+    // ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ 
+    wire [31: 0] csr_tid_data;
+    reg  [31: 0] csr_tid_tid;
+
+    // ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    wire [31: 0] csr_tcfg_data;
+    reg          csr_tcfg_en;
+    reg          csr_tcfg_periodic;
+    reg  [29: 0] csr_tcfg_initval;
+    wire [31: 0] tcfg_next_value;
+
+    // ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Öµ
+    wire [31: 0] csr_tval_data;
+    reg  [31: 0] timer_cnt;
+    // ï¿½ï¿½Ê±ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½
+    wire [31: 0] csr_ticlr_data;
+
+    // TLB
+    wire [31:0] tlbidx_data;
+    reg [`TLBNUM_IDX-1:0] tlbindex_index;
+    reg [5:0] tlbindex_ps;
+    reg       tlbindex_ne;
+    wire [31:0] tlbehi_data;
+    reg  [18:0] tlbehi_vppn;
+    wire [31:0] tlbelo0_data;
+    reg         tlbelo0_v;
+    reg         tlbelo0_d;
+    reg  [ 1:0] tlbelo0_plv;
+    reg  [ 1:0] tlbelo0_mat;
+    reg         tlbelo0_g;
+    reg  [`PALEN-13:0] tlbelo0_ppn;
+    wire [31:0] tlbelo1_data;
+    reg         tlbelo1_v;
+    reg         tlbelo1_d;
+    reg  [ 1:0] tlbelo1_plv;
+    reg  [ 1:0] tlbelo1_mat;
+    reg         tlbelo1_g;
+    reg  [`PALEN-13:0] tlbelo1_ppn;
+    wire [31:0] asid_data;
+    reg  [ 9:0] asid_asid;
+    wire [ 7:0] asid_asidbits;
+    wire [31:0] tlbrentry_data;
+    reg  [25:0] tlbrentry_pa;
+
+    assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
+    assign ex_entry = csr_eentry_data;
+    assign ertn_entry = csr_era_data;
+    // CRMDï¿½ï¿½PLVï¿½ï¿½IEï¿½ï¿½
+    always @(posedge clk) begin
+        if (reset) begin
+            csr_crmd_plv <= 2'b0;
+            csr_crmd_ie  <= 1'b0;
+        end
+        else if (wb_ex) begin
+            csr_crmd_plv <= 2'b0;
+            csr_crmd_ie  <= 1'b0;
+        end
+        else if (ertn_flush) begin
+            csr_crmd_plv <= csr_prmd_pplv;
+            csr_crmd_ie  <= csr_prmd_pie;
+        end
+        else if (csr_we && csr_num == `CSR_CRMD) begin
+            csr_crmd_plv <= csr_wmask[`CSR_CRMD_PLV] & csr_wvalue[`CSR_CRMD_PLV]
+                          | ~csr_wmask[`CSR_CRMD_PLV] & csr_crmd_plv;
+            csr_crmd_ie  <= csr_wmask[`CSR_CRMD_IE ] & csr_wvalue[`CSR_CRMD_IE ]
+                          | ~csr_wmask[`CSR_CRMD_IE ] & csr_crmd_ie;
+        end
+    end
+
+    // CRMDï¿½ï¿½DAï¿½ï¿½PGï¿½ï¿½DATFï¿½ï¿½DATMï¿½ï¿½
+    always @(posedge clk) begin
+        if(reset) begin
+            csr_crmd_da   <= 1'b1;
+            csr_crmd_pg   <= 1'b0;
+            csr_crmd_datf <= 2'b0;
+            csr_crmd_datm <= 2'b0;
+        end
+        else if(csr_we &&  wb_ecode==`ECODE_TLBR) begin
+            csr_crmd_da   <= 1'b1;
+            csr_crmd_pg   <= 1'b1;
+        end
+        else if (csr_we && csr_estat_ecode == `ECODE_TLBR) begin
+            csr_crmd_da   <= 1'b0;
+            csr_crmd_pg   <= 1'b1;
+            csr_crmd_datf <= 2'b01;
+            csr_crmd_datm <= 2'b01;            
+        end
+    end
+
+    // PRMDï¿½ï¿½PPLVï¿½ï¿½PIEï¿½ï¿½
+    always @(posedge clk) begin
+        if (wb_ex) begin
+            csr_prmd_pplv <= csr_crmd_plv;
+            csr_prmd_pie  <= csr_crmd_ie;
+        end
+        else if (csr_we && csr_num==`CSR_PRMD) begin
+            csr_prmd_pplv <=  csr_wmask[`CSR_PRMD_PPLV] & csr_wvalue[`CSR_PRMD_PPLV]
+                           | ~csr_wmask[`CSR_PRMD_PPLV] & csr_prmd_pplv;
+            csr_prmd_pie  <=  csr_wmask[`CSR_PRMD_PIE ] & csr_wvalue[`CSR_PRMD_PIE ]
+                           | ~csr_wmask[`CSR_PRMD_PIE ] & csr_prmd_pie;
+        end
+    end
+
+    // ECFGï¿½ï¿½LIEï¿½ï¿½
+    always @(posedge clk) begin
+        if(reset)
+            csr_ecfg_lie <= 13'b0;
+        else if(csr_we && csr_num == `CSR_ECFG)
+            csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
+                        |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
+    end
+    // ESTATï¿½ï¿½ISï¿½ï¿½
+    assign hw_int_in = 8'b0;
+    assign ipi_int_in= 1'b0;
+    always @(posedge clk) begin
+        if (reset) begin
+            csr_estat_is[1:0] <= 2'b0;
+        end
+        else if (csr_we && (csr_num == `CSR_ESTAT)) begin
+            csr_estat_is[1:0] <= ( csr_wmask[`CSR_ESTAT_IS10] & csr_wvalue[`CSR_ESTAT_IS10])
+                               | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
+        end
+
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ó²ï¿½Ð¶ï¿½
+        csr_estat_is[10] <= 1'b0; 
+
+        if (timer_cnt[31:0] == 32'b0) begin
+            csr_estat_is[11] <= 1'b1;
+        end
+        else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
+                && csr_wvalue[`CSR_TICLR_CLR]) 
+            csr_estat_is[11] <= 1'b0;
+        csr_estat_is[12] <= ipi_int_in;     // ï¿½Ë¼ï¿½ï¿½Ð¶ï¿½
+    end    
+    // ESTATï¿½ï¿½Ecodeï¿½ï¿½EsubCodeï¿½ï¿½
+    always @(posedge clk) begin
+        if (wb_ex) begin
+            csr_estat_ecode    <= wb_ecode;
+            csr_estat_esubcode <= wb_esubcode;
+        end
+    end
+    // ERAï¿½ï¿½PCï¿½ï¿½
+    always @(posedge clk) begin
+        if(wb_ex)
+            csr_era_data <= wb_pc;
+        else if (csr_we && csr_num == `CSR_ERA) 
+            csr_era_data <= csr_wmask[`CSR_ERA_PC] & csr_wvalue[`CSR_ERA_PC]
+                        | ~csr_wmask[`CSR_ERA_PC] & csr_era_data;
+    end
+     // EENTRY
+    always @(posedge clk) begin
+        if (csr_we && (csr_num == `CSR_EENTRY))
+            csr_eentry_va <=   csr_wmask[`CSR_EENTRY_VA] & csr_wvalue[`CSR_EENTRY_VA]
+                            | ~csr_wmask[`CSR_EENTRY_VA] & csr_eentry_va ;
+    end
+
+    // SAVE0~3
+    always @(posedge clk) begin
+        if (csr_we && csr_num == `CSR_SAVE0) 
+            csr_save0_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
+                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save0_data;
+        if (csr_we && (csr_num == `CSR_SAVE1)) 
+            csr_save1_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
+                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save1_data;
+        if (csr_we && (csr_num == `CSR_SAVE2)) 
+            csr_save2_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
+                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save2_data;
+        if (csr_we && (csr_num == `CSR_SAVE3)) 
+            csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
+                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
+    end
+    // BADVï¿½ï¿½VAddrï¿½ï¿½
+    assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
+    always @(posedge clk) begin
+        if (wb_ex && wb_ex_addr_err) begin
+            csr_badv_vaddr <= (wb_ecode==`ECODE_ADE && wb_esubcode==`ESUBCODE_ADEF) ? wb_pc:wb_vaddr;
+        end
+    end
+    // TID
+    always @(posedge clk) begin
+        if (reset) begin
+            csr_tid_tid <= 32'b0;
+        end
+        else if (csr_we && csr_num == `CSR_TID) begin
+            csr_tid_tid <= csr_wmask[`CSR_TID_TID] & csr_wvalue[`CSR_TID_TID]
+                        | ~csr_wmask[`CSR_TID_TID] & csr_tid_tid;
+        end
+    end
+
+    // TCFGï¿½ï¿½ENï¿½ï¿½Periodicï¿½ï¿½InitValï¿½ï¿½
+    always @(posedge clk) begin
+        if (reset) 
+            csr_tcfg_en <= 1'b0;
+        else if (csr_we && csr_num == `CSR_TCFG) begin
+            csr_tcfg_en <= csr_wmask[`CSR_TCFG_EN] & csr_wvalue[`CSR_TCFG_EN]
+                        | ~csr_wmask[`CSR_TCFG_EN] & csr_tcfg_en;
+        end
+        if (csr_we && csr_num == `CSR_TCFG) begin
+            csr_tcfg_periodic <= csr_wmask[`CSR_TCFG_PERIOD] & csr_wvalue[`CSR_TCFG_PERIOD]
+                              | ~csr_wmask[`CSR_TCFG_PERIOD] & csr_tcfg_periodic;
+            csr_tcfg_initval  <= csr_wmask[`CSR_TCFG_INITV] & csr_wvalue[`CSR_TCFG_INITV]
+                              | ~csr_wmask[`CSR_TCFG_INITV] & csr_tcfg_initval;
+        end
+    end
+
+    // TVAL
+    assign tcfg_next_value = csr_wmask[31:0] & csr_wvalue[31:0]
+                           |~csr_wmask[31:0] & csr_tcfg_data;
+    always @(posedge clk) begin
+        if (reset) begin
+            timer_cnt <= 32'hffffffff;
+        end
+        else if (csr_we && csr_num == `CSR_TCFG && tcfg_next_value[`CSR_TCFG_EN]) begin
+            timer_cnt <= {tcfg_next_value[`CSR_TCFG_INITV], 2'b0};
+        end
+        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin
+            if (timer_cnt[31:0] == 32'b0 && csr_tcfg_periodic) begin
+                timer_cnt <= {csr_tcfg_initval, 2'b0};
+            end
+            else begin
+                timer_cnt <= timer_cnt - 1'b1;
+            end
+        end
+    end
+
+    // TICLRï¿½ï¿½CLRï¿½ï¿½
+    assign csr_ticlr_clr = 1'b0;
+
+    assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
+                            csr_crmd_da, csr_crmd_ie, csr_crmd_plv};
+    assign csr_prmd_data  = {29'b0, csr_prmd_pie, csr_prmd_pplv};
+    assign csr_ecfg_data  = {19'b0, csr_ecfg_lie};
+    assign csr_estat_data = { 1'b0, csr_estat_esubcode, csr_estat_ecode, 3'b0, csr_estat_is};
+    assign csr_eentry_data= {csr_eentry_va, 6'b0};
+    assign csr_badv_data  = csr_badv_vaddr;
+    assign csr_tid_data   = csr_tid_tid;
+    assign csr_tcfg_data  = {csr_tcfg_initval, csr_tcfg_periodic, csr_tcfg_en};
+    assign csr_tval_data  = timer_cnt;
+    assign csr_ticlr_data = {31'b0, csr_ticlr_clr};
+    assign csr_rvalue = {32{csr_num == `CSR_CRMD  }} & csr_crmd_data
+                      | {32{csr_num == `CSR_PRMD  }} & csr_prmd_data
+                      | {32{csr_num == `CSR_ECFG  }} & csr_ecfg_data
+                      | {32{csr_num == `CSR_ESTAT }} & csr_estat_data
+                      | {32{csr_num == `CSR_ERA   }} & csr_era_data
+                      | {32{csr_num == `CSR_EENTRY}} & csr_eentry_data
+                      | {32{csr_num == `CSR_SAVE0 }} & csr_save0_data
+                      | {32{csr_num == `CSR_SAVE1 }} & csr_save1_data
+                      | {32{csr_num == `CSR_SAVE2 }} & csr_save2_data
+                      | {32{csr_num == `CSR_SAVE3 }} & csr_save3_data
+                      | {32{csr_num == `CSR_BADV  }} & csr_badv_data
+                      | {32{csr_num == `CSR_TID   }} & csr_tid_data
+                      | {32{csr_num == `CSR_TCFG  }} & csr_tcfg_data
+                      | {32{csr_num == `CSR_TVAL  }} & csr_tval_data
+                      | {32{csr_num == `CSR_TICLR }} & csr_ticlr_data
+                      | {32{csr_num == `CSR_TLBIDX}} & tlbidx_data
+                      | {32{csr_num == `CSR_TLBEHI}} & tlbehi_data
+                      | {32{csr_num == `CSR_TLBELO0}} & tlbelo0_data
+                      | {32{csr_num == `CSR_TLBELO1}} & tlbelo1_data
+                      | {32{csr_num == `CSR_ASID  }} & asid_data
+                      | {32{csr_num == `CSR_TLBRENTRY}} & tlbrentry_data;
+
+
+    // ------------ TLB -------------
+    // TLBIDX
+    assign tlbindex_index_CSRoutput = tlbindex_index;
+    assign tlbidx_data = {tlbindex_ne, 1'b0, tlbindex_ps, 8'h0, 12'h0, tlbindex_index};// ï¿½Ù¶ï¿½TLBNUM=16,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Þ¸Ä£ï¿½
+    always @(posedge clk) begin
+        if (reset) begin
+            tlbindex_index <= 4'b0;
+            tlbindex_ps <= 6'b0;
+            tlbindex_ne <= 1'b0;
+        end
+        else if (csr_we && csr_num == `CSR_TLBIDX) begin
+            tlbindex_index <= csr_wmask[`CSR_TLBIDX_INDEX] & csr_wvalue[`CSR_TLBIDX_INDEX]
+                           | ~csr_wmask[`CSR_TLBIDX_INDEX] & tlbindex_index;
+            tlbindex_ps <= csr_wmask[`CSR_TLBIDX_PS] & csr_wvalue[`CSR_TLBIDX_PS]
+                        | ~csr_wmask[`CSR_TLBIDX_PS] & tlbindex_ps;
+            tlbindex_ne <= csr_wmask[`CSR_TLBIDX_NE] & csr_wvalue[`CSR_TLBIDX_NE]
+                        | ~csr_wmask[`CSR_TLBIDX_NE] & tlbindex_ne;
+        end
+        else if (inst_wb_tlbsrch) begin
+            tlbindex_ne <= ~tlbsrch_found;
+            tlbindex_index <= tlbsrch_found ? tlbsrch_idxgot : tlbindex_index; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½ï¿½
+        end
+        else if (inst_wb_tlbrd) begin
+            tlbindex_ps <= {6{tlbread_e}} & tlbread_ps;
+            tlbindex_ne <= ~tlbread_e;
+        end
+    end
+    
+        // output for tlbwr
+    assign tlbwr_e  = ~tlbindex_ne;
+    assign tlbwr_ps =  tlbindex_ps;
+
+    // TLBEHI
+    assign tlbehi_data = {tlbehi_vppn, 13'h0};
+    always @(posedge clk) begin
+        if (reset) begin
+            tlbehi_vppn <= 19'b0;
+        end
+        else if(csr_we && csr_num == `CSR_TLBEHI) begin
+            tlbehi_vppn <= csr_wmask[`CSR_TLBEHI_VPPN] & csr_wvalue[`CSR_TLBEHI_VPPN]
+                        | ~csr_wmask[`CSR_TLBEHI_VPPN] & tlbehi_vppn;
+        end
+        else if (inst_wb_tlbrd) begin
+            tlbehi_vppn <= tlbread_e ? tlbread_vppn : 19'd0; 
+        end
+    end
+    assign tlbehi_vppn_CSRoutput = tlbehi_vppn;
+
+    assign tlbwr_g = tlbelo0_g && tlbelo1_g;
+    // TLBELO0
+    assign tlbelo0_data = {4'h0, tlbelo0_ppn, 1'b0, tlbelo0_g, tlbelo0_mat, tlbelo0_plv, tlbelo0_d, tlbelo0_v};// ï¿½Ù¶ï¿½PALEN=32,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Þ¸Ä£ï¿½
+    always @(posedge clk) begin
+        if (reset) begin
+            tlbelo0_v <= 1'b0;
+            tlbelo0_d <= 1'b0;
+            tlbelo0_plv <= 2'b0;
+            tlbelo0_mat <= 2'b0;
+            tlbelo0_g <= 1'b0;
+            tlbelo0_ppn <= 20'b0;
+        end
+        else if(csr_we && csr_num == `CSR_TLBELO0) begin
+            tlbelo0_v <= csr_wmask[`CSR_TLBELO_V] & csr_wvalue[`CSR_TLBELO_V]
+                        | ~csr_wmask[`CSR_TLBELO_V] & tlbelo0_v;
+            tlbelo0_d <= csr_wmask[`CSR_TLBELO_D] & csr_wvalue[`CSR_TLBELO_D]
+                        | ~csr_wmask[`CSR_TLBELO_D] & tlbelo0_d;
+            tlbelo0_plv <= csr_wmask[`CSR_TLBELO_PLV] & csr_wvalue[`CSR_TLBELO_PLV]
+                        | ~csr_wmask[`CSR_TLBELO_PLV] & tlbelo0_plv;
+            tlbelo0_mat <= csr_wmask[`CSR_TLBELO_MAT] & csr_wvalue[`CSR_TLBELO_MAT]
+                        | ~csr_wmask[`CSR_TLBELO_MAT] & tlbelo0_mat;
+            tlbelo0_g <= csr_wmask[`CSR_TLBELO_G] & csr_wvalue[`CSR_TLBELO_G]
+                        | ~csr_wmask[`CSR_TLBELO_G] & tlbelo0_g;
+            tlbelo0_ppn <= csr_wmask[`CSR_TLBELO_PPN] & csr_wvalue[`CSR_TLBELO_PPN]
+                        | ~csr_wmask[`CSR_TLBELO_PPN] & tlbelo0_ppn;
+        end
+        else if (inst_wb_tlbrd) begin
+            if (tlbread_e) begin
+                tlbelo0_v <= tlbread_v0;
+                tlbelo0_d <= tlbread_d0;
+                tlbelo0_plv <= tlbread_plv0;
+                tlbelo0_mat <= tlbread_mat0;
+                tlbelo0_g <= tlbread_g;
+                tlbelo0_ppn <= tlbread_ppn0;                  
+            end
+            else begin
+                tlbelo0_v <= 1'b0;
+                tlbelo0_d <= 1'b0;
+                tlbelo0_plv <= 2'b0;
+                tlbelo0_mat <= 2'b0;
+                tlbelo0_g <= 1'b0;
+                tlbelo0_ppn <= 20'b0;
+            end
+        end
+    end
+    assign tlbwr_ppn0 = tlbelo0_ppn;
+    assign tlbwr_plv0 = tlbelo0_plv;
+    assign tlbwr_mat0 = tlbelo0_mat;
+    assign tlbwr_d0   = tlbelo0_d;
+    assign tlbwr_v0   = tlbelo0_v;
+
+    // TLBELO1
+    assign tlbelo1_data = {4'h0, tlbelo1_ppn, 1'b0, tlbelo1_g, tlbelo1_mat, tlbelo1_plv, tlbelo1_d, tlbelo1_v};// ï¿½Ù¶ï¿½PALEN=32,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Þ¸Ä£ï¿½
+    always @(posedge clk) begin
+        if (reset) begin
+            tlbelo1_v <= 1'b0;
+            tlbelo1_d <= 1'b0;
+            tlbelo1_plv <= 2'b0;
+            tlbelo1_mat <= 2'b0;
+            tlbelo1_g <= 1'b0;
+            tlbelo1_ppn <= 20'b0;
+        end
+        else if(csr_we && csr_num == `CSR_TLBELO1) begin
+            tlbelo1_v <= csr_wmask[`CSR_TLBELO_V] & csr_wvalue[`CSR_TLBELO_V]
+                        | ~csr_wmask[`CSR_TLBELO_V] & tlbelo1_v;
+            tlbelo1_d <= csr_wmask[`CSR_TLBELO_D] & csr_wvalue[`CSR_TLBELO_D]
+                        | ~csr_wmask[`CSR_TLBELO_D] & tlbelo1_d;
+            tlbelo1_plv <= csr_wmask[`CSR_TLBELO_PLV] & csr_wvalue[`CSR_TLBELO_PLV]
+                        | ~csr_wmask[`CSR_TLBELO_PLV] & tlbelo1_plv;
+            tlbelo1_mat <= csr_wmask[`CSR_TLBELO_MAT] & csr_wvalue[`CSR_TLBELO_MAT]
+                        | ~csr_wmask[`CSR_TLBELO_MAT] & tlbelo1_mat;
+            tlbelo1_g <= csr_wmask[`CSR_TLBELO_G] & csr_wvalue[`CSR_TLBELO_G]
+                        | ~csr_wmask[`CSR_TLBELO_G] & tlbelo1_g;
+            tlbelo1_ppn <= csr_wmask[`CSR_TLBELO_PPN] & csr_wvalue[`CSR_TLBELO_PPN]
+                        | ~csr_wmask[`CSR_TLBELO_PPN] & tlbelo1_ppn;
+        end
+        else if (inst_wb_tlbrd) begin
+            if (tlbread_e) begin
+                tlbelo1_v <= tlbread_v1;
+                tlbelo1_d <= tlbread_d1;
+                tlbelo1_plv <= tlbread_plv1;
+                tlbelo1_mat <= tlbread_mat1;
+                tlbelo1_g <= tlbread_g;
+                tlbelo1_ppn <= tlbread_ppn1;                  
+            end
+            else begin
+                tlbelo1_v <= 1'b0;
+                tlbelo1_d <= 1'b0;
+                tlbelo1_plv <= 2'b0;
+                tlbelo1_mat <= 2'b0;
+                tlbelo1_g <= 1'b0;
+                tlbelo1_ppn <= 20'b0;
+            end
+        end
+    end
+    assign tlbwr_ppn1 = tlbelo1_ppn;
+    assign tlbwr_plv1 = tlbelo1_plv;
+    assign tlbwr_mat1 = tlbelo1_mat;
+    assign tlbwr_d1   = tlbelo1_d;
+    assign tlbwr_v1   = tlbelo1_v;
+
+    // ASID
+    assign asid_asidbits = 8'd10;
+    assign asid_data = {8'h0, asid_asidbits, 6'h0, asid_asid};
+    always @(posedge clk) begin
+        if (reset) begin
+            asid_asid <= 10'b0;
+        end
+        else if(csr_we && csr_num == `CSR_ASID) begin
+             asid_asid <= csr_wmask[`CSR_ASID_ASID] & csr_wvalue[`CSR_ASID_ASID]
+                       | ~csr_wmask[`CSR_ASID_ASID] & asid_asid;
+        end
+        else if (inst_wb_tlbrd) begin
+            asid_asid <= {10{tlbread_e}} & tlbread_asid;
+        end
+    end
+    assign asid_CSRoutput = asid_asid;
+    // TLBRENTRY
+    assign tlbrentry_data = {tlbrentry_pa, 6'h0};
+    always @(posedge clk) begin
+        if (reset) begin
+            tlbrentry_pa <= 26'b0;
+        end
+        else if(csr_we && csr_num == `CSR_TLBRENTRY) begin
+             tlbrentry_pa <= csr_wmask[`CSR_TLBRENTRY_PA] & csr_wvalue[`CSR_TLBRENTRY_PA]
+                       | ~csr_wmask[`CSR_TLBRENTRY_PA] & tlbrentry_pa;
+        end
+    end
+endmodule
+
+// 32Î»Boothï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½
+// 32Î»ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½34Î»ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½17ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½
 module Adder (
     input   [63:0] in1,
     input   [63:0] in2,
@@ -1871,11 +2584,11 @@ module Wallace_Mul (
     wire [16:0] sel_neg_2x_val;
     wire [16:0] sel_0_val;
     wire [18:0] debug;
-    // À©Õ¹³É34Î»ÒÔ¼æÈÝÎÞ·ûºÅÊý³Ë·¨£¨Å¼ÊýÎ»Ò×ÓÚ´¦Àí£©
+    // ï¿½ï¿½Õ¹ï¿½ï¿½34Î»ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½Å¼ï¿½ï¿½Î»ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½
     wire [33:0] B_r;
     wire [33:0] B_m;
     wire [33:0] B_l;
-    wire [63:0] P [16:0];   // Î´¶ÔÆëµÄ²¿·Ö»ý
+    wire [63:0] P [16:0];   // Î´ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½Ö»ï¿½
 
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -1897,7 +2610,7 @@ module Wallace_Mul (
     assign sel_2x      = (~B_l & B_m & B_r);                         // 011
     assign sel_0       = (B_l & B_m & B_r) | (~B_l & ~B_m & ~B_r);     // 000, 111
 
-    // ÆæÊýÎ»²ÅÊÇÓÐÐ§µÄÑ¡È¡ÐÅºÅ
+    // ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½Ñ¡È¡ï¿½Åºï¿½
     assign sel_x_val    = { sel_x[32], sel_x[30], sel_x[28], sel_x[26], sel_x[24],
                             sel_x[22], sel_x[20], sel_x[18], sel_x[16],
                             sel_x[14], sel_x[12], sel_x[10], sel_x[ 8],
@@ -1918,9 +2631,9 @@ module Wallace_Mul (
                             sel_0[22], sel_0[20], sel_0[18], sel_0[16],
                             sel_0[14], sel_0[12], sel_0[10], sel_0[ 8],
                             sel_0[ 6], sel_0[ 4], sel_0[ 2], sel_0[ 0]}; 
-    // debugÐÅºÅÓ¦Îª0FFFF                                                                                              
+    // debugï¿½Åºï¿½Ó¦Îª0FFFF                                                                                              
     assign debug        = sel_x_val + sel_neg_2x_val + sel_neg_x_val + sel_2x_val + sel_0_val;
-    // Ê®Áù¸öÎ´¶ÔÆëµÄ²¿·Ö»ý
+    // Ê®ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½Ö»ï¿½
     assign {P[16], P[15], P[14], P[13], P[12],
             P[11], P[10], P[ 9], P[ 8],
             P[ 7], P[ 6], P[ 5], P[ 4],
@@ -2029,7 +2742,7 @@ module Wallace_Mul (
     );
     assign level_3[4] = level_2[6];
     assign level_3[5] = level_2[7];
-//-----------------------------------------Á÷Ë®¼¶ÇÐ·Ö-------------------------------------------
+//-----------------------------------------ï¿½ï¿½Ë®ï¿½ï¿½ï¿½Ð·ï¿½-------------------------------------------
     
 //-----------------------------------------Level 4--------------------------------------------- 
     wire [63:0] level_4 [3:0];
@@ -2066,7 +2779,7 @@ module Wallace_Mul (
         .C(level_6[0]),
         .S(level_6[1])
     );
-//-----------------------------------------Á÷Ë®¼¶ÇÐ·Ö-------------------------------------------
+//-----------------------------------------ï¿½ï¿½Ë®ï¿½ï¿½ï¿½Ð·ï¿½-------------------------------------------
     reg  [63:0] level_6_r [1:0];
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -2082,11 +2795,11 @@ module Div(
     input  wire    resetn,
     input  wire    div,
     input  wire    div_signed,
-    input  wire [31:0] x,   //±»³ýÊý
-    input  wire [31:0] y,   //³ýÊý
-    output wire [31:0] s,   //ÉÌ
-    output wire [31:0] r,   //ÓàÊý
-    output wire    complete //³ý·¨Íê³ÉÐÅºÅ
+    input  wire [31:0] x,   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    input  wire [31:0] y,   //ï¿½ï¿½ï¿½ï¿½
+    output wire [31:0] s,   //ï¿½ï¿½
+    output wire [31:0] r,   //ï¿½ï¿½ï¿½ï¿½
+    output wire    complete //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
 );
 
     wire        sign_s;
@@ -2098,17 +2811,17 @@ module Div(
     reg  [63:0] x_pad;
     reg  [32:0] y_pad;
     reg  [31:0] s_r;
-    reg  [32:0] r_r;    // µ±Ç°µÄÓàÊý
+    reg  [32:0] r_r;    // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     reg  [ 5:0] counter;
 
-// 1.È·¶¨·ûºÅÎ»
+// 1.È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
     assign sign_s = (x[31]^y[31]) & div_signed;
     assign sign_r = x[31] & div_signed;
     assign abs_x  = (div_signed & x[31]) ? (~x+1'b1): x;
     assign abs_y  = (div_signed & y[31]) ? (~y+1'b1): y;
-// 2.Ñ­»·µü´úµÃµ½ÉÌºÍÓàÊý¾ø¶ÔÖµ
+// 2.Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½Ìºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
     assign complete = counter == 6'd33;
-    //³õÊ¼»¯¼ÆÊýÆ÷
+    //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     always @(posedge div_clk) begin
         if(~resetn) begin
             counter <= 6'b0;
@@ -2120,7 +2833,7 @@ module Div(
                 counter <= counter + 1'b1;
         end
     end
-    //×¼±¸²Ù×÷Êý,counter=0
+    //×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,counter=0
     always @(posedge div_clk) begin
         if(~resetn)
             {x_pad, y_pad} <= {64'b0, 33'b0};
@@ -2130,9 +2843,9 @@ module Div(
         end
     end
 
-    //Çó½âµ±Ç°µü´úµÄ¼õ·¨½á¹û
-    assign pre_r = r_r - y_pad;                     //Î´»Ö¸´ÓàÊýµÄ½á¹û
-    assign recover_r = pre_r[32] ? r_r : pre_r;     //»Ö¸´ÓàÊýµÄ½á¹û
+    //ï¿½ï¿½âµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    assign pre_r = r_r - y_pad;                     //Î´ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä½ï¿½ï¿½
+    assign recover_r = pre_r[32] ? r_r : pre_r;     //ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä½ï¿½ï¿½
     always @(posedge div_clk) begin
         if(~resetn) 
             s_r <= 32'b0;
@@ -2144,307 +2857,651 @@ module Div(
         if(~resetn)
             r_r <= 33'b0;
         if(div & ~complete) begin
-            if(~|counter)   //ÓàÊý³õÊ¼»¯
+            if(~|counter)   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
                 r_r <= {32'b0, abs_x[31]};
             else
                 r_r <=  (counter == 32) ? recover_r : {recover_r, x_pad[31 - counter]};
         end
     end
-// 3.µ÷Õû×îÖÕÉÌºÍÓàÊý
+// 3.ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ï¿½ï¿½
     assign s = div_signed & sign_s ? (~s_r+1'b1) : s_r;
     assign r = div_signed & sign_r ? (~r_r+1'b1) : r_r;
 endmodule
 
-module csr(
-    input  wire          clk       ,
-    input  wire          reset     ,
-    // ¶Á¶Ë¿Ú
-    input  wire          csr_re    ,
-    input  wire [13:0]   csr_num   ,
-    output wire [31:0]   csr_rvalue,
-    // Ð´¶Ë¿Ú
-    input  wire          csr_we    ,
-    input  wire [31:0]   csr_wmask ,
-    input  wire [31:0]   csr_wvalue,
-    // ÓëÓ²¼þµçÂ·½»»¥µÄ½Ó¿ÚÐÅºÅ
-    output wire [31:0]   ex_entry  , //ËÍÍùpre-IFµÄÒì³£Èë¿ÚµØÖ·
-    output wire [31:0]   ertn_entry, //ËÍÍùpre-IFµÄ·µ»ØÈë¿ÚµØÖ·
-    output wire          has_int   , //ËÍÍùID½×¶ÎµÄÖÐ¶ÏÓÐÐ§ÐÅºÅ
-    input  wire          ertn_flush, //À´×ÔWB½×¶ÎµÄertnÖ¸ÁîÖ´ÐÐÓÐÐ§ÐÅºÅ
-    input  wire          wb_ex     , //À´×ÔWB½×¶ÎµÄÒì³£´¦Àí´¥·¢ÐÅºÅ
-    input  wire [ 5:0]   wb_ecode  , //À´×ÔWB½×¶ÎµÄÒì³£ÀàÐÍ
-    input  wire [ 8:0]   wb_esubcode,//À´×ÔWB½×¶ÎµÄÒì³£ÀàÐÍ¸¨ÖúÂë
-    input  wire [31:0]   wb_vaddr   ,//À´×ÔWB½×¶ÎµÄ·Ã´æµØÖ·
-    input  wire [31:0]   wb_pc       //Ð´»ØµÄ·µ»ØµØÖ·
+module bridge_sram_axi(
+    input               aclk,
+    input               aresetn,
+    // read req channel
+    output  reg [ 3:0]      arid,
+    output  reg [31:0]      araddr,
+    output  reg [ 7:0]      arlen,
+    output  reg [ 2:0]      arsize,
+    output  reg [ 1:0]      arburst,
+    output  reg [ 1:0]      arlock,
+    output  reg [ 3:0]      arcache,
+    output  reg [ 2:0]      arprot,
+    output              	arvalid,
+    input               	arready,
+    // read response channel
+    input   	[ 3:0]      rid,
+    input   	[31:0]      rdata,
+    input   	[ 1:0]      rresp,
+    input               	rlast,
+    input               	rvalid,
+    output              	rready,
+    // write req channel
+    output  reg [ 3:0]      awid,
+    output  reg [31:0]      awaddr,
+    output  reg [ 7:0]      awlen,
+    output  reg [ 2:0]      awsize,
+    output  reg [ 1:0]      awburst,
+    output  reg [ 1:0]      awlock,
+    output  reg [ 3:0]      awcache,
+    output  reg [ 2:0]      awprot,
+    output              	awvalid,
+    input               	awready,
+    // write data channel
+    output  reg [ 3:0]      wid,
+    output  reg [31:0]      wdata,
+    output  reg [ 3:0]      wstrb,
+    output  reg         	wlast,
+    output              	wvalid,
+    input               	wready,
+    // write response channel
+    input   	[ 3:0]      bid,
+    input   	[ 1:0]      bresp,
+    input               	bvalid,
+    output              	bready,
+    // inst sram interface
+    input               	inst_sram_req,
+    input               	inst_sram_wr,
+    input   	[ 1:0]      inst_sram_size,
+    input   	[31:0]      inst_sram_addr,
+    input   	[ 3:0]      inst_sram_wstrb,
+    input   	[31:0]      inst_sram_wdata,
+    output              inst_sram_addr_ok,
+    output              inst_sram_data_ok,
+    output  [31:0]      inst_sram_rdata,
+    // data sram interface
+    input               	data_sram_req,
+    input               	data_sram_wr,
+    input   	[ 1:0]      data_sram_size,
+    input   	[31:0]      data_sram_addr,
+    input   	[31:0]      data_sram_wdata,
+    input   	[ 3:0]      data_sram_wstrb,
+    output              data_sram_addr_ok,
+    output              data_sram_data_ok,
+    output  [31:0]      data_sram_rdata
 );
-    wire [ 7: 0] hw_int_in;
-    wire         ipi_int_in;
-    // µ±Ç°Ä£Ê½ÐÅÏ¢
-    wire [31: 0] csr_crmd_data;
-    reg  [ 1: 0] csr_crmd_plv;      //CRMDµÄPLVÓò£¬µ±Ç°ÌØÈ¨µÈ¼¶
-    reg          csr_crmd_ie;       //CRMDµÄÈ«¾ÖÖÐ¶ÏÊ¹ÄÜÐÅºÅ
-    reg          csr_crmd_da;       //CRMDµÄÖ±½ÓµØÖ··­ÒëÊ¹ÄÜ
-    reg          csr_crmd_pg;
-    reg  [ 6: 5] csr_crmd_datf;
-    reg  [ 8: 7] csr_crmd_datm;
-    // reg  [31: 9] csr_crmd_r0;
+	// ×´Ì¬ï¿½ï¿½×´Ì¬ï¿½Ä´ï¿½ï¿½ï¿½
+	reg [4:0] ar_current_state;	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½
+	reg [4:0] ar_next_state;
+	reg [4:0] r_current_state;	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½
+	reg [4:0] r_next_state;
+	reg [4:0] w_current_state;	// Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½
+	reg [4:0] w_next_state;
+	reg [4:0] b_current_state;	// Ð´ï¿½ï¿½Ó¦×´Ì¬ï¿½ï¿½
+	reg [4:0] b_next_state;
+	// ï¿½ï¿½Ö·ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ö³É¹ï¿½ï¿½ï¿½Î´ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	reg [1:0] ar_resp_cnt;
+	reg [1:0] aw_resp_cnt;
+	reg [1:0] wd_resp_cnt;
+	// ï¿½ï¿½ï¿½Ý¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½0-Ö¸ï¿½ï¿½SRAMï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½1-ï¿½ï¿½ï¿½ï¿½SRAMï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½idï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	reg [31:0] buf_rdata [1:0];
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Øµï¿½ï¿½Ð¶ï¿½ï¿½Åºï¿½
+	wire read_block;
+	// ï¿½ï¿½ï¿½É¼Ä´ï¿½ï¿½ï¿½
+    reg  [ 3:0] rid_r;
 
-    // ÀýÍâÇ°Ä£Ê½ÐÅÏ¢
-    wire [31: 0] csr_prmd_data;
-    reg  [ 1: 0] csr_prmd_pplv;     //CRMDµÄPLVÓò¾ÉÖµ
-    reg          csr_prmd_pie;      //CRMDµÄIEÓò¾ÉÖµ
+	localparam  IDLE = 5'b1;         //ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IDLE×´Ì¬  
 
-    // ÀýÍâ¿ØÖÆ
-    wire [31: 0] csr_ecfg_data;     // ±£ÁôÎ»31:13
-    reg  [12: 0] csr_ecfg_lie;      //¾Ö²¿ÖÐ¶ÏÊ¹ÄÜÎ»
+//state machine for read req channel
 
-    // ÀýÍâ×´Ì¬
-    wire [31: 0] csr_estat_data;    // ±£ÁôÎ»15:13, 31
-    reg  [12: 0] csr_estat_is;      // ÀýÍâÖÐ¶ÏµÄ×´Ì¬Î»£¨8¸öÓ²¼þÖÐ¶Ï+1¸ö¶¨Ê±Æ÷ÖÐ¶Ï+1¸öºË¼äÖÐ¶Ï+2¸öÈí¼þÖÐ¶Ï£©
-    reg  [ 5: 0] csr_estat_ecode;   // ÀýÍâÀàÐÍÒ»¼¶±àÂë
-    reg  [ 8: 0] csr_estat_esubcode;// ÀýÍâÀàÐÍ¶þ¼¶±àÂë
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    localparam  AR_REQ_START  	= 3'b010,
+				AR_REQ_END		= 3'b100;
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(posedge aclk) begin
+		if(~aresetn)
+			ar_current_state <= IDLE;
+		else 
+			ar_current_state <= ar_next_state;
+	end
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(*) begin
+		case(ar_current_state)
+			IDLE:begin
+				if(~aresetn | read_block)
+					ar_next_state = IDLE;
+				else if(data_sram_req & ~data_sram_wr | inst_sram_req & ~inst_sram_wr)
+					ar_next_state = AR_REQ_START;
+				else
+					ar_next_state = IDLE;
+			end
+			AR_REQ_START:begin
+				if(arvalid & arready) 
+					ar_next_state = AR_REQ_END;
+				else 
+					ar_next_state = AR_REQ_START;
+			end
+			AR_REQ_END:begin
+				ar_next_state = IDLE;
+			end
+		endcase
+	end
+//--------------------------------state machine for read response channel-------------------------------------------
+    //ï¿½ï¿½ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    localparam  R_DATA_START   	= 3'b010,
+				R_DATA_END		= 3'b100;
+    //ï¿½ï¿½ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(posedge aclk) begin
+		if(~aresetn)
+			r_current_state <= IDLE;
+		else 
+			r_current_state <= r_next_state;
+	end
+	//ï¿½ï¿½ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(*) begin
+		case(r_current_state)
+			IDLE:begin
+				if(aresetn & arvalid & arready | (|ar_resp_cnt))
+					r_next_state = R_DATA_START;
+				else
+					r_next_state = IDLE;
+			end
+			R_DATA_START:begin
+				if(rvalid & rready & rlast) 	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+					r_next_state = R_DATA_END;
+				else
+					r_next_state = R_DATA_START;
+			end
+			R_DATA_END:
+				r_next_state = IDLE;
+			default:
+				r_next_state = IDLE;
+		endcase
+	end
 
-    // ÀýÍâ·µ»ØµØÖ·ERA
-    reg  [31: 0] csr_era_data;  // data
+//state machine for write req & data channel
 
-    // ÀýÍâÈë¿ÚµØÖ·eentry
-    wire [31: 0] csr_eentry_data;   // ±£ÁôÎ»5:0
-    reg  [25: 0] csr_eentry_va;     // ÀýÍâÖÐ¶ÏÈë¿Ú¸ßÎ»µØÖ·
-    // Êý¾Ý±£´æ
-    reg  [31: 0] csr_save0_data;
-    reg  [31: 0] csr_save1_data;
-    reg  [31: 0] csr_save2_data;
-    reg  [31: 0] csr_save3_data;
-    // ³ö´íÐéµØÖ·
-    wire         wb_ex_addr_err;
-    reg  [31: 0] csr_badv_vaddr;
-    wire [31: 0] csr_badv_data;
-    // ¶¨Ê±Æ÷±àºÅ 
-    wire [31: 0] csr_tid_data;
-    reg  [31: 0] csr_tid_tid;
+    //Ð´ï¿½ï¿½ï¿½ï¿½&Ð´ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	localparam  W_REQ_START      		= 5'b00010,
+				W_ADDR_RESP				= 5'b00100,
+				W_DATA_RESP      		= 5'b01000,
+				W_REQ_END				= 5'b10000;
+    //Ð´ï¿½ï¿½ï¿½ï¿½&Ð´ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(posedge aclk) begin
+		if(~aresetn)
+			w_current_state <= IDLE;
+		else 
+			w_current_state <= w_next_state;
+	end
+	//Ð´ï¿½ï¿½ï¿½ï¿½&Ð´ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(*) begin
+		case(w_current_state)
+			IDLE:begin
+				if(~aresetn)
+					w_next_state = IDLE;
+				else if(data_sram_wr)
+					w_next_state = W_REQ_START;
+				else
+					w_next_state = IDLE;
+			end
+			W_REQ_START:
+				if(awvalid & awready & wvalid & wready | (|aw_resp_cnt)&(|wd_resp_cnt))
+					w_next_state = W_REQ_END;
+				else if(awvalid & awready | (|aw_resp_cnt))
+					w_next_state = W_ADDR_RESP;
+				else if(wvalid & wready | (|wd_resp_cnt))
+					w_next_state = W_DATA_RESP;
+				else
+					w_next_state = W_REQ_START;
+			W_ADDR_RESP:begin
+				if(wvalid & wready) 
+					w_next_state = W_REQ_END;
+				else 
+					w_next_state = W_ADDR_RESP;
+			end
+			W_DATA_RESP:begin
+				if(awvalid & awready)
+					w_next_state = W_REQ_END;
+				else
+					w_next_state = W_DATA_RESP;
+			end
+			W_REQ_END:
+				if(bvalid &bvalid)
+					w_next_state = IDLE;
+				else
+					w_next_state = W_REQ_END;
+		endcase
+	end
 
-    // ¶¨Ê±Æ÷ÅäÖÃ
-    wire [31: 0] csr_tcfg_data;
-    reg          csr_tcfg_en;
-    reg          csr_tcfg_periodic;
-    reg  [29: 0] csr_tcfg_initval;
-    wire [31: 0] tcfg_next_value;
+//state machine for write response channel
 
-    // ¶¨Ê±Æ÷ÊýÖµ
-    wire [31: 0] csr_tval_data;
-    reg  [31: 0] timer_cnt;
-    // ¶¨Ê±ÖÐ¶ÏÇå³ý
-    wire [31: 0] csr_ticlr_data;
+    //Ð´ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    localparam  B_START     = 3'b010,
+				B_END		= 3'b100;
+    //Ð´ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(posedge aclk) begin
+		if(~aresetn)
+			b_current_state <= IDLE;
+		else 
+			b_current_state <= b_next_state;
+	end
+	//Ð´ï¿½ï¿½Ó¦Í¨ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
+	always @(*) begin
+		case(b_current_state)
+			IDLE:begin
+				if(aresetn & bready)
+					b_next_state = B_START;
+				else
+					b_next_state = IDLE;
+			end
+			B_START:begin
+				if(bready & bvalid) 
+					b_next_state = B_END;
+				else 
+					b_next_state = B_START;
+			end
+			B_END:begin
+				b_next_state = IDLE;
+			end
+		endcase
+	end
 
-    assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
-    assign ex_entry = csr_eentry_data;
-    assign ertn_entry = csr_era_data;
-    // CRMDµÄPLV¡¢IEÓò
-    always @(posedge clk) begin
-        if (reset) begin
-            csr_crmd_plv <= 2'b0;
-            csr_crmd_ie  <= 1'b0;
-        end
-        else if (wb_ex) begin
-            csr_crmd_plv <= 2'b0;
-            csr_crmd_ie  <= 1'b0;
-        end
-        else if (ertn_flush) begin
-            csr_crmd_plv <= csr_prmd_pplv;
-            csr_crmd_ie  <= csr_prmd_pie;
-        end
-        else if (csr_we && csr_num == `CSR_CRMD) begin
-            csr_crmd_plv <= csr_wmask[`CSR_CRMD_PLV] & csr_wvalue[`CSR_CRMD_PLV]
-                          | ~csr_wmask[`CSR_CRMD_PLV] & csr_crmd_plv;
-            csr_crmd_ie  <= csr_wmask[`CSR_CRMD_IE ] & csr_wvalue[`CSR_CRMD_IE ]
-                          | ~csr_wmask[`CSR_CRMD_IE ] & csr_crmd_ie;
-        end
+//read req channel
+
+	assign arvalid = ar_current_state[1];
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			arid <= 4'b0;
+			araddr <= 32'b0;
+			arsize <= 3'b0;
+			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// ï¿½ï¿½Öµ
+		end
+		else if(ar_current_state[0]) begin	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// ï¿½ï¿½ï¿½ï¿½RAMï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½RAM
+			araddr <= data_sram_req & ~data_sram_wr? data_sram_addr : inst_sram_addr;
+			arsize <= data_sram_req & ~data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
+		end
+	end
+
+//read response channel
+
+    always @(posedge aclk) begin
+		if(~aresetn)
+			ar_resp_cnt <= 2'b0;
+		else if(arvalid & arready & rvalid & rready)	// ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½channelÍ¬Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			ar_resp_cnt <= ar_resp_cnt;		
+		else if(arvalid & arready)
+			ar_resp_cnt <= ar_resp_cnt + 1'b1;
+		else if(rvalid & rready)
+			ar_resp_cnt <= ar_resp_cnt - 1'b1;
+	end
+	assign rready = r_current_state[1];
+
+//write req channel
+
+	assign awvalid = w_current_state[1] | w_current_state[3];	// W_REQ_START | W_DATA_RESP
+
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			awaddr <= 32'b0;
+			awsize <= 3'b0;
+			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// ï¿½ï¿½Öµ
+		end
+		else if(w_current_state[0]) begin	// Ð´ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			awaddr <= data_sram_wr? data_sram_addr : inst_sram_addr;
+			awsize <= data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
+		end
+	end
+
+//write data channel
+
+    assign wvalid = w_current_state[1] | w_current_state[2];	// W_REQ_START | W_ADDR_RESP
+	always  @(posedge aclk) begin
+		if(~aresetn) begin
+			wstrb <= 4'b0;
+			wdata <= 32'b0;
+			{wid, wlast} <= {4'b1, 1'b1};	// ï¿½ï¿½Öµ
+		end
+		else if(w_current_state[0]) begin	// Ð´ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			wstrb <= data_sram_wstrb;
+			wdata <= data_sram_wdata;
+		end
+	end
+
+//write response channel
+
+    assign bready = w_current_state[4];
+	always @(posedge aclk) begin
+		if(~aresetn) begin
+			aw_resp_cnt <= 2'b0;
+		end
+		else if(awvalid & awready)
+			aw_resp_cnt <= aw_resp_cnt + {1'b0, ~(bvalid & bready)};
+		else if(bvalid & bready) 
+			aw_resp_cnt <= aw_resp_cnt - 1'b1;
+	end
+
+	always @(posedge aclk) begin
+		if(~aresetn) begin
+			wd_resp_cnt <= 2'b0;
+		end
+		else if(wvalid & wready)
+			wd_resp_cnt <= wd_resp_cnt + {1'b0, ~(bvalid & bready)};
+		else if(bvalid & bready) begin
+			wd_resp_cnt <= wd_resp_cnt - 1'b1;
+		end
+	end
+    
+//rdata buffer
+
+	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// ï¿½ï¿½Ð´ï¿½ï¿½Ö·ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´Ð´ï¿½ï¿½
+	always @(posedge aclk)begin
+		if(!aresetn)
+			{buf_rdata[1], buf_rdata[0]} <= 64'b0;
+		else if(rvalid & rready)
+			buf_rdata[rid] <= rdata;
+	end
+	assign data_sram_rdata = buf_rdata[1];
+	assign data_sram_addr_ok = arid[0] & arvalid & arready | wid[0] & awvalid & awready ; 
+	assign data_sram_data_ok = rid_r[0] & r_current_state[2] | bid[0] & bvalid & bready; 
+	
+	assign inst_sram_rdata = buf_rdata[0];
+	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rreadyï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
+	assign inst_sram_addr_ok = ~arid[0] & arvalid & arready;
+
+	// data_ok ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Òªï¿½ï¿½bufferï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½Òªï¿½Èµï¿½ï¿½ï¿½Ò»ï¿½ï¿½
+	// assign inst_sram_data_ok = ~rid[0] & rvalid & rready;
+
+	always @(posedge aclk)  begin
+		if(~aresetn)
+			rid_r <= 4'b0;
+		else if(rvalid & rready)
+			rid_r <= rid;
+	end	
+endmodule
+
+module tlb (
+    input  wire        clk,
+    input  wire        reset,
+
+    // search port 0 (for fetch)
+    input  wire [18:0] s0_vppn,
+    input  wire        s0_va_bit12, //ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ðµï¿½ï¿½ï¿½topï¿½ï¿½
+    input  wire [ 9:0] s0_asid,
+    output wire        s0_found,
+    output wire [$clog2(`TLBNUM)-1:0] s0_index,
+    output wire [19:0] s0_ppn,
+    output wire [ 5:0] s0_ps,
+    output wire [ 1:0] s0_plv,
+    output wire [ 1:0] s0_mat,
+    output wire        s0_d,
+    output wire        s0_v,
+
+    // search port 1 (for load/store)
+    input  wire [18:0] s1_vppn,
+    input  wire        s1_va_bit12,
+    input  wire [ 9:0] s1_asid,
+    output wire        s1_found,
+    output wire [$clog2(`TLBNUM)-1:0] s1_index,
+    output wire [19:0] s1_ppn,
+    output wire [ 5:0] s1_ps,
+    output wire [ 1:0] s1_plv,
+    output wire [ 1:0] s1_mat,
+    output wire        s1_d,
+    output wire        s1_v,
+
+    // invtlb opcode
+    input  wire        invtlb_valid,
+    input  wire [ 4:0] invtlb_op,
+
+    // write port
+    input  wire        inst_wb_tlbfill,
+
+    input  wire        we, //w(rite) e(nable)
+    input  wire [$clog2(`TLBNUM)-1:0] w_index,
+    input  wire        w_e,
+    input  wire [18:0] w_vppn,
+    input  wire [ 5:0] w_ps, // 22:4MB 12:4KB
+    input  wire [ 9:0] w_asid,
+    input  wire        w_g,
+
+    input  wire [19:0] w_ppn0,
+    input  wire [ 1:0] w_plv0,
+    input  wire [ 1:0] w_mat0,
+    input  wire        w_d0,
+    input  wire        w_v0,
+
+    input  wire [19:0] w_ppn1,
+    input  wire [ 1:0] w_plv1,
+    input  wire [ 1:0] w_mat1,
+    input  wire        w_d1,
+    input  wire        w_v1,
+
+    // read port
+    input  wire [$clog2(`TLBNUM)-1:0] r_index,
+    output wire        r_e,
+    output wire [18:0] r_vppn,
+    output wire [ 5:0] r_ps,
+    output wire [ 9:0] r_asid,
+    output wire        r_g,
+
+    output wire [19:0] r_ppn0,
+    output wire [ 1:0] r_plv0,
+    output wire [ 1:0] r_mat0,
+    output wire        r_d0,
+    output wire        r_v0,
+
+    output wire [19:0] r_ppn1,
+    output wire [ 1:0] r_plv1,
+    output wire [ 1:0] r_mat1,
+    output wire        r_d1,
+    output wire        r_v1
+);
+
+reg [`TLBNUM-1:0] tlb_e;
+reg [`TLBNUM-1:0] tlb_ps4MB; //pagesize 1:4MB, 0:4KB
+
+reg [18:0] tlb_vppn [`TLBNUM-1:0];
+reg [ 9:0] tlb_asid [`TLBNUM-1:0];
+reg        tlb_g    [`TLBNUM-1:0];
+
+reg [19:0] tlb_ppn0 [`TLBNUM-1:0];
+reg [ 1:0] tlb_plv0 [`TLBNUM-1:0];
+reg [ 1:0] tlb_mat0 [`TLBNUM-1:0];
+reg        tlb_d0   [`TLBNUM-1:0];
+reg        tlb_v0   [`TLBNUM-1:0];
+
+reg [19:0] tlb_ppn1 [`TLBNUM-1:0];
+reg [ 1:0] tlb_plv1 [`TLBNUM-1:0];
+reg [ 1:0] tlb_mat1 [`TLBNUM-1:0];
+reg        tlb_d1   [`TLBNUM-1:0];
+reg        tlb_v1   [`TLBNUM-1:0];
+
+wire [`TLBNUM-1:0] match0;
+wire [`TLBNUM-1:0] match1;
+
+wire [`TLBNUM-1:0] cond1;
+wire [`TLBNUM-1:0] cond2;
+wire [`TLBNUM-1:0] cond3;
+wire [`TLBNUM-1:0] cond4;
+
+wire [`TLBNUM-1:0] invtlb_mask [31:0];
+
+wire s0_whichpage;// Ë«Ò³ï¿½Ðµï¿½ï¿½ï¿½Ò»Ò³
+wire s1_whichpage;
+
+///////// Read ////////////
+assign r_e    = tlb_e    [r_index];
+
+assign r_vppn = tlb_vppn [r_index];
+assign r_ps   = tlb_ps4MB[r_index] ? 6'd22 : 6'd12;
+assign r_asid = tlb_asid [r_index];
+assign r_g    = tlb_g    [r_index];
+
+/////////
+// [[[[[ ATTENTION ]]]]]
+// ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½0ï¿½ï¿½1ï¿½Ç²ï¿½Í¬ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½1ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ë«Ò³ï¿½á¹¹ï¿½ÂµÄµï¿½0Ò³ï¿½Íµï¿½1Ò³
+// ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ãµï¿½0ï¿½ï¿½1ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½Í¨ï¿½ï¿½0ï¿½ï¿½IFï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½Í¨ï¿½ï¿½1ï¿½ï¿½EXï¿½ï¿½
+/////////
+
+assign r_ppn0 = tlb_ppn0 [r_index];
+assign r_plv0 = tlb_plv0 [r_index];
+assign r_mat0 = tlb_mat0 [r_index];
+assign r_d0   = tlb_d0   [r_index];
+assign r_v0   = tlb_v0   [r_index];
+
+assign r_ppn1 = tlb_ppn1 [r_index];
+assign r_plv1 = tlb_plv1 [r_index];
+assign r_mat1 = tlb_mat1 [r_index];
+assign r_d1   = tlb_d1   [r_index];
+assign r_v1   = tlb_v1   [r_index];
+
+///////// Search //////////
+
+// Match
+genvar i;
+generate
+    for (i = 0; i < `TLBNUM; i = i + 1) begin
+        assign match0[i] = (s0_vppn[18:10]==tlb_vppn[i][18:10])
+                            && (tlb_ps4MB[i] || s0_vppn[9:0]==tlb_vppn[i][9:0])
+                            && ((s0_asid==tlb_asid[i]) || tlb_g[i]);
+        assign match1[i] = (s1_vppn[18:10]==tlb_vppn[i][18:10])
+                            && (tlb_ps4MB[i] || s1_vppn[9:0]==tlb_vppn[i][9:0])
+                            && ((s1_asid==tlb_asid[i]) || tlb_g[i]);
     end
+endgenerate
 
-    // CRMDµÄDA¡¢PG¡¢DATF¡¢DATMÓò
-    always @(posedge clk) begin
-        if(reset) begin
-            csr_crmd_da   <= 1'b1;
-            csr_crmd_pg   <= 1'b0;
-            csr_crmd_datf <= 2'b0;
-            csr_crmd_datm <= 2'b0;
-        end
-        else if(csr_we &&  wb_ecode==`ECODE_TLBR) begin
-            csr_crmd_da   <= 1'b1;
-            csr_crmd_pg   <= 1'b1;
-        end
-        else if (csr_we && csr_estat_ecode == `ECODE_TLBR) begin
-            csr_crmd_da   <= 1'b0;
-            csr_crmd_pg   <= 1'b1;
-            csr_crmd_datf <= 2'b01;
-            csr_crmd_datm <= 2'b01;            
-        end
-    end
+assign s0_found = |match0;
+assign s1_found = |match1;
 
-    // PRMDµÄPPLV¡¢PIEÓò
-    always @(posedge clk) begin
-        if (wb_ex) begin
-            csr_prmd_pplv <= csr_crmd_plv;
-            csr_prmd_pie  <= csr_crmd_ie;
-        end
-        else if (csr_we && csr_num==`CSR_PRMD) begin
-            csr_prmd_pplv <=  csr_wmask[`CSR_PRMD_PPLV] & csr_wvalue[`CSR_PRMD_PPLV]
-                           | ~csr_wmask[`CSR_PRMD_PPLV] & csr_prmd_pplv;
-            csr_prmd_pie  <=  csr_wmask[`CSR_PRMD_PIE ] & csr_wvalue[`CSR_PRMD_PIE ]
-                           | ~csr_wmask[`CSR_PRMD_PIE ] & csr_prmd_pie;
-        end
-    end
+// generate index
+assign s0_index =   match0[ 1] ? 4'd1  :
+                    match0[ 2] ? 4'd2  :
+                    match0[ 3] ? 4'd3  :
+                    match0[ 4] ? 4'd4  :
+                    match0[ 5] ? 4'd5  :
+                    match0[ 6] ? 4'd6  :
+                    match0[ 7] ? 4'd7  :
+                    match0[ 8] ? 4'd8  :
+                    match0[ 9] ? 4'd9  :
+                    match0[10] ? 4'd10 :
+                    match0[11] ? 4'd11 :
+                    match0[12] ? 4'd12 :
+                    match0[13] ? 4'd13 :
+                    match0[14] ? 4'd14 :
+                    match0[15] ? 4'd15 :
+                    4'd0; // Default, Ã»ï¿½ï¿½ï¿½Òµï¿½Ê±ï¿½ï¿½Òªï¿½ï¿½foundï¿½ï¿½Îª0
+assign s1_index =   match1[ 1] ? 4'd1  :
+                    match1[ 2] ? 4'd2  :
+                    match1[ 3] ? 4'd3  :
+                    match1[ 4] ? 4'd4  :
+                    match1[ 5] ? 4'd5  :
+                    match1[ 6] ? 4'd6  :
+                    match1[ 7] ? 4'd7  :
+                    match1[ 8] ? 4'd8  :
+                    match1[ 9] ? 4'd9  :
+                    match1[10] ? 4'd10 :
+                    match1[11] ? 4'd11 :
+                    match1[12] ? 4'd12 :
+                    match1[13] ? 4'd13 :
+                    match1[14] ? 4'd14 :
+                    match1[15] ? 4'd15 :
+                    4'd0; // Default, Ã»ï¿½ï¿½ï¿½Òµï¿½Ê±ï¿½ï¿½Òªï¿½ï¿½foundï¿½ï¿½Îª0
 
-    // ECFGµÄLIEÓò
-    always @(posedge clk) begin
-        if(reset)
-            csr_ecfg_lie <= 13'b0;
-        else if(csr_we && csr_num == `CSR_ECFG)
-            csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
-                        |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
-    end
-    // ESTATµÄISÓò
-    assign hw_int_in = 8'b0;
-    assign ipi_int_in= 1'b0;
-    always @(posedge clk) begin
-        if (reset) begin
-            csr_estat_is[1:0] <= 2'b0;
-        end
-        else if (csr_we && (csr_num == `CSR_ESTAT)) begin
-            csr_estat_is[1:0] <= ( csr_wmask[`CSR_ESTAT_IS10] & csr_wvalue[`CSR_ESTAT_IS10])
-                               | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
-        end
+assign s0_whichpage = tlb_ps4MB[s0_index] ? s0_vppn[9] : s0_va_bit12;
+assign s0_ps        = tlb_ps4MB[s0_index] ? 6'd22 : 6'd12;
+assign s0_ppn       = s0_whichpage ? tlb_ppn1[s0_index] : tlb_ppn0[s0_index];
+assign s0_plv       = s0_whichpage ? tlb_plv1[s0_index] : tlb_plv0[s0_index];
+assign s0_mat       = s0_whichpage ? tlb_mat1[s0_index] : tlb_mat0[s0_index];
+assign s0_d         = s0_whichpage ? tlb_d1  [s0_index] : tlb_d0  [s0_index];
+assign s0_v         = s0_whichpage ? tlb_v1  [s0_index] : tlb_v0  [s0_index];
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ó²ÖÐ¶Ï
-        csr_estat_is[10] <= 1'b0; 
 
-        if (timer_cnt[31:0] == 32'b0) begin
-            csr_estat_is[11] <= 1'b1;
-        end
-        else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
-                && csr_wvalue[`CSR_TICLR_CLR]) 
-            csr_estat_is[11] <= 1'b0;
-        csr_estat_is[12] <= ipi_int_in;     // ºË¼äÖÐ¶Ï
-    end    
-    // ESTATµÄEcodeºÍEsubCodeÓò
-    always @(posedge clk) begin
-        if (wb_ex) begin
-            csr_estat_ecode    <= wb_ecode;
-            csr_estat_esubcode <= wb_esubcode;
-        end
-    end
-    // ERAµÄPCÓò
-    always @(posedge clk) begin
-        if(wb_ex)
-            csr_era_data <= wb_pc;
-        else if (csr_we && csr_num == `CSR_ERA) 
-            csr_era_data <= csr_wmask[`CSR_ERA_PC] & csr_wvalue[`CSR_ERA_PC]
-                        | ~csr_wmask[`CSR_ERA_PC] & csr_era_data;
-    end
-     // EENTRY
-    always @(posedge clk) begin
-        if (csr_we && (csr_num == `CSR_EENTRY))
-            csr_eentry_va <=   csr_wmask[`CSR_EENTRY_VA] & csr_wvalue[`CSR_EENTRY_VA]
-                            | ~csr_wmask[`CSR_EENTRY_VA] & csr_eentry_va ;
-    end
+assign s1_whichpage = tlb_ps4MB[s1_index] ? s1_vppn[9] : s1_va_bit12;
+assign s1_ps        = tlb_ps4MB[s1_index] ? 6'd22 : 6'd12;
+assign s1_ppn       = s1_whichpage ? tlb_ppn1[s1_index] : tlb_ppn0[s1_index];
+assign s1_plv       = s1_whichpage ? tlb_plv1[s1_index] : tlb_plv0[s1_index];
+assign s1_mat       = s1_whichpage ? tlb_mat1[s1_index] : tlb_mat0[s1_index];
+assign s1_d         = s1_whichpage ? tlb_d1  [s1_index] : tlb_d0  [s1_index];
+assign s1_v         = s1_whichpage ? tlb_v1  [s1_index] : tlb_v0  [s1_index];
 
-    // SAVE0~3
-    always @(posedge clk) begin
-        if (csr_we && csr_num == `CSR_SAVE0) 
-            csr_save0_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
-                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save0_data;
-        if (csr_we && (csr_num == `CSR_SAVE1)) 
-            csr_save1_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
-                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save1_data;
-        if (csr_we && (csr_num == `CSR_SAVE2)) 
-            csr_save2_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
-                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save2_data;
-        if (csr_we && (csr_num == `CSR_SAVE3)) 
-            csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
-                            | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
-    end
-    // BADVµÄVAddrÓò
-    assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
-    always @(posedge clk) begin
-        if (wb_ex && wb_ex_addr_err) begin
-            csr_badv_vaddr <= (wb_ecode==`ECODE_ADE && wb_esubcode==`ESUBCODE_ADEF) ? wb_pc:wb_vaddr;
-        end
-    end
-    // TID
-    always @(posedge clk) begin
-        if (reset) begin
-            csr_tid_tid <= 32'b0;
-        end
-        else if (csr_we && csr_num == `CSR_TID) begin
-            csr_tid_tid <= csr_wmask[`CSR_TID_TID] & csr_wvalue[`CSR_TID_TID]
-                        | ~csr_wmask[`CSR_TID_TID] & csr_tid_tid;
-        end
-    end
+/////////// Write ////////////
+wire [$clog2(`TLBNUM)-1:0] write_index;
+// assign write_index = inst_wb_tlbfill ? rand_num[3:0] : w_index;
+ assign write_index = inst_wb_tlbfill ? 4'h0 : w_index; // For debug use
 
-    // TCFGµÄEN¡¢Periodic¡¢InitValÓò
-    always @(posedge clk) begin
-        if (reset) 
-            csr_tcfg_en <= 1'b0;
-        else if (csr_we && csr_num == `CSR_TCFG) begin
-            csr_tcfg_en <= csr_wmask[`CSR_TCFG_EN] & csr_wvalue[`CSR_TCFG_EN]
-                        | ~csr_wmask[`CSR_TCFG_EN] & csr_tcfg_en;
-        end
-        if (csr_we && csr_num == `CSR_TCFG) begin
-            csr_tcfg_periodic <= csr_wmask[`CSR_TCFG_PERIOD] & csr_wvalue[`CSR_TCFG_PERIOD]
-                              | ~csr_wmask[`CSR_TCFG_PERIOD] & csr_tcfg_periodic;
-            csr_tcfg_initval  <= csr_wmask[`CSR_TCFG_INITV] & csr_wvalue[`CSR_TCFG_INITV]
-                              | ~csr_wmask[`CSR_TCFG_INITV] & csr_tcfg_initval;
-        end
+always @ (posedge clk) begin
+    if (we) begin
+        tlb_e      [write_index] <= w_e;
+        tlb_ps4MB  [write_index] <= (w_ps == 6'd22);
+
+        tlb_vppn   [write_index] <= w_vppn;
+        tlb_asid   [write_index] <= w_asid;
+        tlb_g      [write_index] <= w_g;
+
+        tlb_ppn0   [write_index] <= w_ppn0;
+        tlb_plv0   [write_index] <= w_plv0;
+        tlb_mat0   [write_index] <= w_mat0;
+        tlb_d0     [write_index] <= w_d0;
+        tlb_v0     [write_index] <= w_v0;
+
+        tlb_ppn1   [write_index] <= w_ppn1;
+        tlb_plv1   [write_index] <= w_plv1;
+        tlb_mat1   [write_index] <= w_mat1;
+        tlb_d1     [write_index] <= w_d1;
+        tlb_v1     [write_index] <= w_v1;
+    end 
+    else if(invtlb_valid)
+        tlb_e <= ~invtlb_mask[invtlb_op] & tlb_e; // Ö´ï¿½ï¿½invtlb
+end
+
+/////////////// INVTLB SPECIAL ///////////////
+
+// cond 1~4 ï¿½ë¿´ï¿½ï¿½ï¿½ï¿½ P221
+
+generate
+    for (i = 0; i < `TLBNUM; i = i + 1) begin
+       assign cond1[i] = ~tlb_g[i];
+       assign cond2[i] =  tlb_g[i];
+       assign cond3[i] = s1_asid == tlb_asid[i];
+       assign cond4[i] = (s1_vppn[18:10] == tlb_vppn[i][18:10])&&(tlb_ps4MB[i]||(s1_vppn[9:0] == tlb_vppn[i][9:0]));
     end
+endgenerate
 
-    // TVAL
-    assign tcfg_next_value = csr_wmask[31:0] & csr_wvalue[31:0]
-                           |~csr_wmask[31:0] & csr_tcfg_data;
-    always @(posedge clk) begin
-        if (reset) begin
-            timer_cnt <= 32'hffffffff;
-        end
-        else if (csr_we && csr_num == `CSR_TCFG && tcfg_next_value[`CSR_TCFG_EN]) begin
-            timer_cnt <= {tcfg_next_value[`CSR_TCFG_INITV], 2'b0};
-        end
-        else if (csr_tcfg_en && timer_cnt != 32'hffffffff) begin
-            if (timer_cnt[31:0] == 32'b0 && csr_tcfg_periodic) begin
-                timer_cnt <= {csr_tcfg_initval, 2'b0};
-            end
-            else begin
-                timer_cnt <= timer_cnt - 1'b1;
-            end
-        end
+assign invtlb_mask[0] = 16'hffff;  
+assign invtlb_mask[1] = 16'hffff;
+assign invtlb_mask[2] = cond2;
+assign invtlb_mask[3] = cond1;
+assign invtlb_mask[4] = cond1 & cond3;
+assign invtlb_mask[5] = cond1 & cond3 & cond4;
+assign invtlb_mask[6] = (cond1|cond3) & cond4;
+generate
+    for (i = 7; i < 32; i = i + 1) begin
+        assign invtlb_mask[i] = 16'b0;
     end
+endgenerate
 
-    // TICLRµÄCLRÓò
-    assign csr_ticlr_clr = 1'b0;
-
-    assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
-                            csr_crmd_da, csr_crmd_ie, csr_crmd_plv};
-    assign csr_prmd_data  = {29'b0, csr_prmd_pie, csr_prmd_pplv};
-    assign csr_ecfg_data  = {19'b0, csr_ecfg_lie};
-    assign csr_estat_data = { 1'b0, csr_estat_esubcode, csr_estat_ecode, 3'b0, csr_estat_is};
-    assign csr_eentry_data= {csr_eentry_va, 6'b0};
-    assign csr_badv_data  = csr_badv_vaddr;
-    assign csr_tid_data   = csr_tid_tid;
-    assign csr_tcfg_data  = {csr_tcfg_initval, csr_tcfg_periodic, csr_tcfg_en};
-    assign csr_tval_data  = timer_cnt;
-    assign csr_ticlr_data = {31'b0, csr_ticlr_clr};
-    assign csr_rvalue = {32{csr_num == `CSR_CRMD  }} & csr_crmd_data
-                      | {32{csr_num == `CSR_PRMD  }} & csr_prmd_data
-                      | {32{csr_num == `CSR_ECFG  }} & csr_ecfg_data
-                      | {32{csr_num == `CSR_ESTAT }} & csr_estat_data
-                      | {32{csr_num == `CSR_ERA   }} & csr_era_data
-                      | {32{csr_num == `CSR_EENTRY}} & csr_eentry_data
-                      | {32{csr_num == `CSR_SAVE0 }} & csr_save0_data
-                      | {32{csr_num == `CSR_SAVE1 }} & csr_save1_data
-                      | {32{csr_num == `CSR_SAVE2 }} & csr_save2_data
-                      | {32{csr_num == `CSR_SAVE3 }} & csr_save3_data
-                      | {32{csr_num == `CSR_BADV  }} & csr_badv_data
-                      | {32{csr_num == `CSR_TID   }} & csr_tid_data
-                      | {32{csr_num == `CSR_TCFG  }} & csr_tcfg_data
-                      | {32{csr_num == `CSR_TVAL  }} & csr_tval_data
-                      | {32{csr_num == `CSR_TICLR }} & csr_ticlr_data;
+////////////// RANDOM GEN //////////////
+// reg [7:0] rand_num;
+// always@(posedge clk)begin
+// 	if(reset)
+// 		rand_num <= 8'h15;
+//     else
+//         rand_num[7:0] <= {rand_num[6:0], rand_num[1] ^ rand_num[2] ^ rand_num[7]};
+// end
+reg [3:0] rand_num;
+always @(posedge clk ) begin
+    if (reset) 
+        rand_num <=4'd14;
+    else if(inst_wb_tlbfill && we)
+        rand_num <= rand_num + 4'h1;
+end
+// ATTENTION! ï¿½Øµã£¡
+// Ëµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½exp18ï¿½Ä²ï¿½ï¿½Ôµï¿½Ð´ï¿½Ä£ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½Ôµã¡£
+// Ï£ï¿½ï¿½Ö®ï¿½ï¿½ï¿½Êµï¿½é£¬ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½Å¡ï¿½
 
 endmodule
