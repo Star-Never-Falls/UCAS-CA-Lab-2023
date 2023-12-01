@@ -78,21 +78,12 @@
 
     // macros for ecode and esubcode
     `define ECODE_INT       6'h00
-    `define ECODE_ADE       6'h08   // ADEM: esubcode=1; ADEF: esubcode=0
+    `define ECODE_ADE       6'h08   
     `define ECODE_ALE       6'h09   
     `define ECODE_SYS       6'h0B
     `define ECODE_BRK       6'h0C   
     `define ECODE_INE       6'h0D
     `define ECODE_TLBR      6'h3F
-    // exp19: tlb-related ecodes
-    // `define ECODE_TLBR	    6'h3F
-    // `define ECODE_PIL	    6'h01	// LOADҳ��Ч����
-    // `define ECODE_PIS   	6'h02	// STOREҳ��Ч����
-    // `define ECODE_PIF	    6'h03	// FETCHҳ��Ч����
-    // `define ECODE_PME   	6'h04	// ҳ�޸�����
-    // `define ECODE_PPI		6'h07	// ҳ��Ȩ�ȼ����Ϲ�����
-
-    // TODO: CACHE-RELATED ECODES
     
     `define ESUBCODE_ADEF   9'b00    
 
@@ -104,46 +95,46 @@ module mycpu_top(
     input  aclk   ,
     input  aresetn,
     // read req channel
-    output [ 3:0] arid   , // ������ID
-    output [31:0] araddr , // �������ַ
-    output [ 7:0] arlen  , // �������䳤�ȣ����ݴ���������
-    output [ 2:0] arsize , // ���������С�����ݴ���ÿ�ĵ��ֽ�����
-    output [ 1:0] arburst, // ��������
-    output [ 1:0] arlock , // ԭ����
-    output [ 3:0] arcache, // Cache����
-    output [ 2:0] arprot , // ��������
-    output        arvalid, // �������ַ��Ч
-    input         arready, // �������ַ�����ź�
+    output [ 3:0] arid   , // 读请求ID
+    output [31:0] araddr , // 读请求地址
+    output [ 7:0] arlen  , // 读请求传输长度（数据传输拍数）
+    output [ 2:0] arsize , // 读请求传输大小（数据传输每拍的字节数）
+    output [ 1:0] arburst, // 传输类型
+    output [ 1:0] arlock , // 原子锁
+    output [ 3:0] arcache, // Cache属性
+    output [ 2:0] arprot , // 保护属性
+    output        arvalid, // 读请求地址有效
+    input         arready, // 读请求地址握手信号
     // read response channel
-    input [ 3:0]  rid    , // ������ID�ţ�ͬһ����rid��aridһ��
-    input [31:0]  rdata  , // ���������������
-    input [ 1:0]  rresp  , // �������Ƿ����                        [�ɺ���]
-    input         rlast  , // ���������һ�����ݵ�ָʾ�ź�           [�ɺ���]
-    input         rvalid , // ������������Ч
-    output        rready , // Master��׼���ý�������
+    input [ 3:0]  rid    , // 读请求ID号，同一请求rid与arid一致
+    input [31:0]  rdata  , // 读请求读出的数据
+    input [ 1:0]  rresp  , // 读请求是否完成                        [可忽略]
+    input         rlast  , // 读请求最后一拍数据的指示信号           [可忽略]
+    input         rvalid , // 读请求数据有效
+    output        rready , // Master端准备好接受数据
     // write req channel
-    output [ 3:0] awid   , // д�����ID��
-    output [31:0] awaddr , // д����ĵ�ַ
-    output [ 7:0] awlen  , // д�����䳤�ȣ�������
-    output [ 2:0] awsize , // д������ÿ���ֽ���
-    output [ 1:0] awburst, // д����������
-    output [ 1:0] awlock , // ԭ����
-    output [ 3:0] awcache, // Cache����
-    output [ 2:0] awprot , // ��������
-    output        awvalid, // д�����ַ��Ч
-    input         awready, // Slave��׼���ý��ܵ�ַ����   
+    output [ 3:0] awid   , // 写请求的ID号
+    output [31:0] awaddr , // 写请求的地址
+    output [ 7:0] awlen  , // 写请求传输长度（拍数）
+    output [ 2:0] awsize , // 写请求传输每拍字节数
+    output [ 1:0] awburst, // 写请求传输类型
+    output [ 1:0] awlock , // 原子锁
+    output [ 3:0] awcache, // Cache属性
+    output [ 2:0] awprot , // 保护属性
+    output        awvalid, // 写请求地址有效
+    input         awready, // Slave端准备好接受地址传输   
     // write data channel
-    output [ 3:0] wid    , // д�����ID��
-    output [31:0] wdata  , // д�����д����
-    output [ 3:0] wstrb  , // д�����ֽ�ѡͨλ
-    output        wlast  , // д��������һ�����ݵ�ָʾ�ź�
-    output        wvalid , // д������Ч
-    input         wready , // Slave��׼���ý���д���ݴ���   
+    output [ 3:0] wid    , // 写请求的ID号
+    output [31:0] wdata  , // 写请求的写数据
+    output [ 3:0] wstrb  , // 写请求字节选通位
+    output        wlast  , // 写请求的最后一拍数据的指示信号
+    output        wvalid , // 写数据有效
+    input         wready , // Slave端准备好接受写数据传输   
     // write response channel
-    input  [ 3:0] bid    , // д�����ID��            [�ɺ���]
-    input  [ 1:0] bresp  , // д��������ź�          [�ɺ���]
-    input         bvalid , // д������Ӧ��Ч
-    output        bready , // Master��׼���ý�����Ӧ�ź�
+    input  [ 3:0] bid    , // 写请求的ID号            [可忽略]
+    input  [ 1:0] bresp  , // 写请求完成信号          [可忽略]
+    input         bvalid , // 写请求响应有效
+    output        bready , // Master端准备好接收响应信号
     // trace debug interface
     output wire [31:0] debug_wb_pc,
     output wire [ 3:0] debug_wb_rf_we,
@@ -342,8 +333,7 @@ module mycpu_core(
     wire [ 5:0] wb_ecode;
     wire [ 8:0] wb_esubcode;
 
-//TLB
-
+// --- TLB ---
     // search port 0 (for fetch)
     wire [18:0] s0_vppn;
     wire        s0_va_bit12;
@@ -430,7 +420,7 @@ module mycpu_core(
 
     wire                      wb_refetch_flush;
 
-//END OF TLB
+// --- END OF TLB --- 
 
     assign ertnentry_refetchtarget = ertn_flush ? ertn_entry :
                                      debug_wb_pc + 32'd4; // Refetch Target
@@ -601,7 +591,7 @@ module mycpu_core(
 
         .has_int    (has_int   ),
         .ex_entry   (ex_entry  ),
-        .ertn_entry (ertn_entry),// TODO: ��ERTN_ENTRY�ĵ�������Refetch�Ĳ���
+        .ertn_entry (ertn_entry),// TODO: 把ERTN_ENTRY改掉，加入Refetch的部分
         .ertn_flush (ertn_flush),
         .wb_ex      (wb_ex     ),
         .wb_pc      (wb_pc     ),
@@ -611,7 +601,7 @@ module mycpu_core(
 
         // CSR-TLB
         .inst_wb_tlbsrch(inst_wb_tlbsrch),
-        .tlbsrch_found(wb_tlbsrch_found), //EX���ɣ�WBд�룬��ͬ
+        .tlbsrch_found(wb_tlbsrch_found), //EX生成，WB写入，下同
         .tlbsrch_idxgot(wb_tlbsrch_idxgot),
         .tlbindex_index_CSRoutput(tlbindex_index_CSRoutput),
 
@@ -780,12 +770,12 @@ module IFreg(
     wire [31:0] fs_inst;
     reg  [31:0] fs_pc;
     reg  [31:0] fs_inst_buf;
-    reg         inst_buf_valid;  // �ж�ָ����Ƿ���Ч
+    reg         inst_buf_valid;  // 判断指令缓存是否有效
     reg         inst_sram_addr_ack;
 
     wire        fs_cancel;
     wire        pf_cancel;
-    reg         inst_discard;   // �ж�cancel֮���Ƿ���Ҫ����һ��ָ��
+    reg         inst_discard;   // 判断cancel之后是否需要丢掉一条指令
 
     wire        fs_except_adef;
 
@@ -816,7 +806,7 @@ module IFreg(
             br_target_r <= br_target;
             br_taken_r <= 1'b1;
         end
-        // ����Ӧ��ַ�Ѿ����������ָ��SRAM��ok������nextpc���ٴӼĴ�����ȡ
+        // 若对应地址已经获得了来自指令SRAM的ok，后续nextpc不再从寄存器中取
         else if(pf_ready_go) begin
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
         end
@@ -830,7 +820,7 @@ module IFreg(
             pf_block <= 1'b0;
     end
 
-    // �жϵ�ǰ��ַ�Ƿ��Ѿ����ֳɹ������ɹ�������req�������ظ�����
+    // 判断当前地址是否已经握手成功，若成功则拉低req，避免重复申请
     always @(posedge clk) begin
         if(~resetn)
             inst_sram_addr_ack <= 1'b0;
@@ -849,7 +839,7 @@ module IFreg(
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
-            fs_valid <= to_fs_valid; // ��reset��������һ��ʱ�������زſ�ʼȡָ
+            fs_valid <= to_fs_valid; // 在reset撤销的下一个时钟上升沿才开始取指
         else if(fs_cancel)
             fs_valid <= 1'b0;
     end
@@ -866,12 +856,12 @@ module IFreg(
 //cancel relevant
 
     assign fs_cancel = wb_ex | ertn_flush | br_taken;
-    // assign pf_cancel = 1'b0;       // pre-IF���豻cancel��ԭ�����ڸ���nextpcʱ��ֵ������ȷ��
+    // assign pf_cancel = 1'b0;       // pre-IF无需被cancel，原因是在给出nextpc时的值都是正确的
     assign pf_cancel = fs_cancel;
     always @(posedge clk) begin
         if(~resetn)
             inst_discard <= 1'b0;
-        // ��ˮ��ȡ������pre-IF�׶η��ʹ����ַ�����ѱ�ָ��SRAM���� or IF������Чָ�������ڵȴ����ݷ���ʱ����Ҫ����һ��ָ��
+        // 流水级取消：当pre-IF阶段发送错误地址请求已被指令SRAM接受 or IF内有有效指令且正在等待数据返回时，需要丢弃一条指令
         else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & inst_sram_req)
             inst_discard <= 1'b1;
         else if(inst_discard & inst_sram_data_ok)
@@ -886,15 +876,15 @@ module IFreg(
         else if(to_fs_valid & fs_allowin)
             fs_pc <= nextpc;
     end
-    // ���üĴ������ݴ�ָ�����valid�źű�ʾ����ָ���Ƿ���Ч
+    // 设置寄存器，暂存指令，并用valid信号表示其内指令是否有效
     always @(posedge clk) begin
         if(~resetn) begin
             fs_inst_buf <= 32'b0;
             inst_buf_valid <= 1'b0;
         end
-        else if(to_fs_valid & fs_allowin)   // �����Ѿ�����IF��
+        else if(to_fs_valid & fs_allowin)   // 缓存已经流入IF级
             inst_buf_valid <= 1'b0;
-        else if(fs_cancel)                  // IFȡ������Ҫ��յ�ǰbuffer
+        else if(fs_cancel)                  // IF取消后需要清空当前buffer
             inst_buf_valid <= 1'b0;
         else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard) begin
             fs_inst_buf <= fs_inst;
@@ -975,11 +965,11 @@ module IDreg(
     wire [15:0] op_25_22_d;
     wire [ 3:0] op_21_20_d;
     wire [31:0] op_19_15_d;
-//������ָ��
+//计数器指令
     wire        inst_rdcntid;
     wire        inst_rdcntvl;
     wire        inst_rdcntvh;
-//�������߼�����
+//简单算术逻辑运算
     wire        inst_add_w;
     wire        inst_sub_w;
     wire        inst_slti;
@@ -1000,7 +990,7 @@ module IDreg(
     wire        inst_sra_w;
     wire        inst_srai_w;
     wire        inst_addi_w;
-//�ô�ָ��
+//访存指令
     wire        inst_ld_b;
     wire        inst_ld_h;
     wire        inst_ld_w;
@@ -1009,7 +999,7 @@ module IDreg(
     wire        inst_st_b;
     wire        inst_st_h;
     wire        inst_st_w;
-//ת��ָ��
+//转移指令
     wire        inst_jirl;
     wire        inst_b;
     wire        inst_bl;
@@ -1022,7 +1012,7 @@ module IDreg(
 
     wire        inst_lu12i_w;
     wire        inst_pcaddul2i;
-//���������߼�����
+//复杂算术逻辑运算
     wire        inst_mul_w;
     wire        inst_mulh_w;
     wire        inst_mulh_wu;
@@ -1030,7 +1020,7 @@ module IDreg(
     wire        inst_div_wu;
     wire        inst_mod_w;
     wire        inst_mod_wu;
-//ϵͳ�����쳣֧��ָ��
+//系统调用异常支持指令
     wire        inst_csrrd;
     wire        inst_csrwr;
     wire        inst_csrxchg;
@@ -1038,12 +1028,12 @@ module IDreg(
     wire        inst_syscall;
     wire        inst_break;
 
-    wire        type_al;        // �����߼��࣬arithmatic or logic
-    wire        type_ld_st;     // �ô��࣬ load or store
-    wire        type_bj;        // ��֧��ת�࣬branch or jump
-    wire        type_ex;        // ��������࣬exception
+    wire        type_al;        // 算术逻辑类，arithmatic or logic
+    wire        type_ld_st;     // 访存类， load or store
+    wire        type_bj;        // 分支跳转类，branch or jump
+    wire        type_ex;        // 例外相关类，exception
     wire        type_tlb;       // tlb-related instructions
-    wire        type_else;      // ��֪��ɶ��
+    wire        type_else;      // 不知道啥类
     
     wire        need_ui5;
     wire        need_ui12;
@@ -1061,7 +1051,7 @@ module IDreg(
     wire        inst_invtlb;
     wire [ 4:0] invtlb_op;
     wire        id_refetch_flag;
-    wire [10:0] ds2es_tlb_zip; // ZIP�ź�
+    wire [10:0] ds2es_tlb_zip; // ZIP信号
     wire        es_tlb_blk;///////
     wire        es_inst_tlbrd;
     wire [13:0] es_csr_num;
@@ -1270,11 +1260,11 @@ module IDreg(
     assign inst_tlbfill = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0d;
     assign inst_invtlb  = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h13];
 
-    // ָ�����
+    // 指令分类
     assign type_al    = inst_add_w  | inst_sub_w  | inst_slti   | inst_slt   | inst_sltui  | inst_sltu  |
                         inst_nor    | inst_and    | inst_andi   | inst_or    | inst_ori    | inst_xor   |
                         inst_xori   | inst_sll_w  | inst_slli_w | inst_srl_w | inst_srli_w | inst_sra_w | inst_srai_w | inst_addi_w|
-                        // ������������
+                        // 复杂算数运算
                         inst_mul_w  | inst_mulh_w | inst_mulh_wu| inst_div_w | inst_div_wu | inst_mod_w |
                         inst_mod_wu;
     assign type_ld_st = inst_ld_b   | inst_ld_h   | inst_ld_w   | inst_ld_bu | inst_ld_hu  | inst_st_b  |
@@ -1286,7 +1276,7 @@ module IDreg(
     assign type_tlb   = inst_tlbfill || inst_tlbrd || inst_tlbsrch || inst_tlbwr || inst_invtlb && invtlb_op < 5'h07;
     assign type_else  = inst_rdcntvh| inst_rdcntvl| inst_lu12i_w| inst_pcaddul2i; 
 
-    // alu����������
+    // alu操作码译码
     assign ds_alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_hu |
                         inst_ld_h  | inst_ld_bu  | inst_ld_b | inst_st_b  | 
                         inst_st_w  | inst_st_h   | inst_jirl | inst_bl    | 
@@ -1381,7 +1371,7 @@ module IDreg(
     assign ds_rf_we    = gr_we & ds_valid; 
     assign ds_rf_waddr = dest; 
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
-    //д�ء��ô桢ִ�н׶δ������ݴ���
+    //写回、访存、执行阶段传回数据处理
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
     assign {ms_res_from_mem, ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
@@ -1395,7 +1385,7 @@ module IDreg(
     .waddr  (ws_rf_waddr ),
     .wdata  (ws_rf_wdata )
     );
-    // ��ͻ��дʹ�� + д��ַ��Ϊ0�żĴ��� + д��ַ�뵱ǰ���Ĵ�����ַ��ͬ
+    // 冲突：写使能 + 写地址不为0号寄存器 + 写地址与当前读寄存器地址相同
     assign conflict_r1_wb = (|rf_raddr1) & (rf_raddr1 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r2_wb = (|rf_raddr2) & (rf_raddr2 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r1_mem = (|rf_raddr1) & (rf_raddr1 == ms_rf_waddr) & ms_rf_we;
@@ -1404,47 +1394,17 @@ module IDreg(
     assign conflict_r2_exe = (|rf_raddr2) & (rf_raddr2 == es_rf_waddr) & es_rf_we;
     assign need_r1         = ~ds_src1_is_pc & (|ds_alu_op);
     assign need_r2         = ~ds_src2_is_imm & (|ds_alu_op);
-    // �üĴ��������ͻ��Ϣ
-    // always @(posedge clk) begin
-    //     if(~ds_ready_go) begin
-    //         if(conflict_r1_exe)
-    //             conflict_r1_exe_r <= 1'b1;
-    //         if(conflict_r2_exe)
-    //             conflict_r2_exe_r <= 1'b1;
-    //         if(conflict_r1_mem)
-    //             conflict_r1_mem_r <= 1'b1;
-    //         if(conflict_r2_mem)
-    //             conflict_r2_mem_r <= 1'b1;
-    //         if(conflict_r1_wb)
-    //             conflict_r1_wb_r <= 1'b1;
-    //         if(conflict_r2_wb)
-    //             conflict_r2_wb_r <= 1'b1;
-    //     end
-    //     else if(fs2ds_valid & ds_allowin) begin
-    //         conflict_r1_exe_r <= 1'b0;
-    //         conflict_r2_exe_r <= 1'b0;
-    //         conflict_r1_mem_r <= 1'b0;
-    //         conflict_r2_mem_r <= 1'b0;
-    //         conflict_r1_wb_r <= 1'b0;
-    //         conflict_r2_wb_r <= 1'b0;
-    //     end
-    // end
-    // ���ݳ�ͻʱ�������Ⱥ�˳�������һ�θ���Ϊ׼
+    
     assign rj_value  =  conflict_r1_exe ? es_rf_wdata:
                         conflict_r1_mem ? ms_rf_wdata:
                         conflict_r1_wb  ? ws_rf_wdata : rf_rdata1; 
     assign rkd_value =  conflict_r2_exe ? es_rf_wdata:
                         conflict_r2_mem ? ms_rf_wdata:
                         conflict_r2_wb  ? ws_rf_wdata : rf_rdata2; 
-    // assign rj_value  =  (conflict_r1_exe|conflict_r1_exe_r) ? es_rf_wdata:
-    //                     (conflict_r1_mem|conflict_r1_mem_r) ? ms_rf_wdata:
-    //                     (conflict_r1_wb |conflict_r1_wb_r)  ? ws_rf_wdata : rf_rdata1; 
-    // assign rkd_value =  (conflict_r2_exe|conflict_r2_exe_r) ? es_rf_wdata:
-    //                     (conflict_r2_mem|conflict_r2_mem_r) ? ms_rf_wdata:
-    //                     (conflict_r2_wb |conflict_r2_wb_r)  ? ws_rf_wdata : rf_rdata2; 
+   
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
-    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ��ȡ����exe�ڲ��ļ���������״̬�Ĵ���TID�еļ���
+    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // 读取的是exe内部的计数器，非状态寄存器TID中的计数
 
 //exception AND tlb relavant
 
@@ -1462,10 +1422,10 @@ module IDreg(
     assign ds_except_zip  = {ds_except_adef, ds_except_ine, // 14+32+32+1+1 
                              ds_except_int , ds_except_brk, ds_except_sys, inst_ertn};    // 1+1+1+1+1
 
-    assign id_refetch_flag = inst_invtlb || inst_tlbrd || inst_tlbwr || inst_tlbfill;  // ��ǰָ�������һ��ָ����ҪRefetch
+    assign id_refetch_flag = inst_invtlb || inst_tlbrd || inst_tlbwr || inst_tlbfill;  // 当前指令造成下一条指令需要Refetch
                       //|| ds_csr_we && (ds_csr_num == `CSR_ASID || ds_csr_num == `CSR_CRMD || ds_csr_num == `CSR_DMW0 || ds_csr_num == `CSR_DMW1);
                         // Reserved for exp19
-                        // ��ʵת����Ҫ��ȡCSR.ASID; CSR.CRMD; ds_csr_num == `CSR_DMW����޸ĺ����Refetch��ȷ��ȡָ��ȷ
+                        // 虚实转换需要读取CSR.ASID; CSR.CRMD; ds_csr_num == `CSR_DMW因此修改后必须Refetch来确保取指正确
     assign ds2es_tlb_zip = {id_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op};
     assign invtlb_op = ds_inst[4:0];
 
@@ -1473,25 +1433,24 @@ module IDreg(
     assign {es_inst_tlbrd, es_csr_we, es_csr_num} = es_tlb_blk_zip;
     assign {ms_inst_tlbrd, ms_csr_we, ms_csr_num} = ms_tlb_blk_zip;
     assign tlb_blk = ms_tlb_blk || es_tlb_blk;
-    assign es_tlb_blk = type_ld_st && (                                 // ��ͨ�ô� EXP19
-                                        es_inst_tlbrd ||                // tlbrd��Ķ�CSR.ASID
-                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_CRMD || es_csr_num == `CSR_DMW0 || es_csr_num == `CSR_DMW1)) // �޸�CSR.ASID��ֱ��ӳ�����
-    ) || inst_tlbsrch && (                                              // tlbsrchָ��, ��ҪEX�׶ζ���CSR.ASID TLBEHI
+    assign es_tlb_blk = type_ld_st && (                                 // 普通访存 EXP19
+                                        es_inst_tlbrd ||                // tlbrd会改动CSR.ASID
+                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_CRMD || es_csr_num == `CSR_DMW0 || es_csr_num == `CSR_DMW1)) // 修改CSR.ASID或直接映射相关
+    ) || inst_tlbsrch && (                                              // tlbsrch指令, 需要EX阶段读入CSR.ASID TLBEHI
                                         es_inst_tlbrd || 
                                         (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI))
                     );
-    assign ms_tlb_blk = type_ld_st && (                                 // ��ͨ�ô� EXP19
-                                        ms_inst_tlbrd ||                // tlbrd��Ķ�CSR.ASID
-                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_CRMD || ms_csr_num == `CSR_DMW0 || ms_csr_num == `CSR_DMW1)) // �޸�CSR.ASID��ֱ��ӳ�����
-    ) || inst_tlbsrch && (                                              // tlbsrchָ��, ��ҪEX�׶ζ���CSR.ASID TLBEHI
+    assign ms_tlb_blk = type_ld_st && (                                 // 普通访存 EXP19
+                                        ms_inst_tlbrd ||                // tlbrd会改动CSR.ASID
+                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_CRMD || ms_csr_num == `CSR_DMW0 || ms_csr_num == `CSR_DMW1)) // 修改CSR.ASID或直接映射相关
+    ) || inst_tlbsrch && (                                              // tlbsrch指令, 需要EX阶段读入CSR.ASID TLBEHI
                                         ms_inst_tlbrd || 
                                         (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI))
                     );
 
 
 
-//ds to es interface
-
+//------------------------------ds to es interface--------------------------------------
     assign ds2es_bus = {ds_alu_op,          //19 bit
                         ds_res_from_mem,    //1  bit
                         ds_alu_src1,        //32 bit
@@ -1595,7 +1554,7 @@ module EXEreg(
     wire        es_mem_req;
 
 // TLB
-    reg  [10:0] ds2es_tlb_zip; // ZIP�ź�
+    reg  [10:0] ds2es_tlb_zip; // ZIP信号
     wire        inst_tlbsrch;
     wire        inst_tlbrd;
     wire        inst_tlbwr;
@@ -1637,7 +1596,7 @@ module EXEreg(
              es_csr_re, es_rf_we, es_rf_waddr, es_rkd_value, es_pc, es_st_op_zip, 
              es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp, ds2es_tlb_zip} <= ds2es_bus;    
     end
-    // ָ����
+    // 指令拆包
     assign {op_ld_h, op_ld_hu, op_ld_w} = es_ld_inst_zip[2:0];
     assign {op_st_b, op_st_h, op_st_w} = es_st_op_zip;
     assign {rd_cnt_h, rd_cnt_l} = es_cnt_inst_zip;
@@ -1699,14 +1658,15 @@ module EXEreg(
 
 //regfile relevant
 
-    // exe�׶���ʱѡ����д������
+    // exe阶段暂时选出的写回数据
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
                               {32{~rd_cnt_h & ~rd_cnt_l}} & es_alu_result;
-    //��ʱ��Ϊes_rf_wdata����es_rf_result_tmp,ֻ����ld��ָ����Ҫ���⴦��
+    //暂时认为es_rf_wdata等于es_rf_result_tmp,只有在ld类指令需要特殊处理
     assign es_rf_zip       = {es_csr_re & es_valid, es_res_from_mem & es_valid, es_rf_we & es_valid, es_rf_waddr, es_rf_result_tmp};    
 
-/TLB relevant
+//TLB relevant
+
 
     assign {es_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op} = ds2es_tlb_zip;
     assign {s1_vppn, s1_va_bit12} = inst_invtlb ? es_rkd_value[31:12] :
@@ -1764,10 +1724,10 @@ module MEMreg(
     wire        ms_wait_data_ok;
     reg         ms_wait_data_ok_r;
     reg  [31:0] ms_data_buf;
-    reg         data_buf_valid;  // �ж�ָ����Ƿ���Ч
+    reg         data_buf_valid;  // 判断指令缓存是否有效
 
 // TLB
-    reg  [ 9:0] es2ms_tlb_zip; // ZIP�ź�
+    reg  [ 9:0] es2ms_tlb_zip; // ZIP信号
     wire        inst_tlbsrch;
     wire        inst_tlbrd;
     wire        inst_tlbwr;
@@ -1800,13 +1760,13 @@ module MEMreg(
     
 //data buffer
 
-    // ���üĴ������ݴ����ݣ�����valid�źű�ʾ���������Ƿ���Ч
+    // 设置寄存器，暂存数据，并用valid信号表示其内数据是否有效
     always @(posedge clk) begin
         if(~resetn) begin
             ms_data_buf <= 32'b0;
             data_buf_valid <= 1'b0;
         end
-        else if(ms2ws_valid & ws_allowin)   // �����Ѿ�������һ��ˮ��
+        else if(ms2ws_valid & ws_allowin)   // 缓存已经流向下一流水级
             data_buf_valid <= 1'b0;
         else if(~data_buf_valid & data_sram_data_ok & ms_valid) begin
             ms_data_buf <= data_sram_rdata;
@@ -1830,7 +1790,7 @@ module MEMreg(
 
 //mem and wb state interface
 
-    // ϸ��������
+    // 细粒度译码
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
     assign shift_rdata   = {24'b0, {32{data_buf_valid}} & ms_data_buf | {32{~data_buf_valid}} & data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
@@ -1919,14 +1879,12 @@ module WBreg(
     reg  [78:0] ws_csr_zip;
 
 // TLB
-    reg  [ 9:0] ms2wb_tlb_zip; // ZIP�ź�
+    reg  [ 9:0] ms2wb_tlb_zip; // ZIP信号
     // wire        inst_tlbsrch;
     // wire        inst_tlbrd;
     wire        inst_wb_tlbwr;
     // wire        inst_tlbfill;
     wire        wb_refetch_flag;
-    // wire        tlbsrch_found;
-    // wire [ 3:0] tlbsrch_idxgot;
 
 //state control signal
 
@@ -1953,15 +1911,13 @@ module WBreg(
             {csr_re, ws_rf_we_tmp, ws_rf_waddr, ws_rf_wdata_tmp} <= ms_rf_zip;
         end
     end
-
-//wb and csr state interface
-
+//-----------------------------wb and csr state interface---------------------------------------
     assign {csr_num, csr_wmask, csr_wvalue,  csr_we} = ws_csr_zip & {79{ws_valid}};
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
             ws_except_sys, ws_ertn} = ws_except_zip;    // ertn_flush=inst_ertn
     assign ertn_flush = ws_ertn & ws_valid;
-    assign wb_ex = (ws_except_adef |                   // �ô����ַȡָ�Ѿ��������ʲ���ws_valid�ҹ�
-                    ws_except_int  |                    // �ж���״̬�Ĵ����еļ�ʱ������������ws_valid�ҹ�
+    assign wb_ex = (ws_except_adef |                   // 用错误地址取指已经发生，故不与ws_valid挂钩
+                    ws_except_int  |                    // 中断由状态寄存器中的计时器产生，不与ws_valid挂钩
                     ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
@@ -1969,7 +1925,7 @@ module WBreg(
                        ws_except_sys? `ECODE_SYS:
                        ws_except_brk? `ECODE_BRK:
                        ws_except_ine? `ECODE_INE:
-                        6'b0;   // δ����ADEM��TLBR
+                        6'b0;   // 未包含ADEM和TLBR
     assign wb_esubcode = 9'b0;
 
 //id and ws state interface
@@ -1995,24 +1951,24 @@ endmodule
 module csr(
     input  wire          clk       ,
     input  wire          reset     ,
-    // ���˿�
+    // 读端口
     input  wire          csr_re    ,
     input  wire [13:0]   csr_num   ,
     output wire [31:0]   csr_rvalue,
-    // д�˿�
+    // 写端口
     input  wire          csr_we    ,
     input  wire [31:0]   csr_wmask ,
     input  wire [31:0]   csr_wvalue,
-    // ��Ӳ����·�����Ľӿ��ź�
-    output wire [31:0]   ex_entry  , //����pre-IF���쳣��ڵ�ַ
-    output wire [31:0]   ertn_entry, //����pre-IF�ķ�����ڵ�ַ
-    output wire          has_int   , //����ID�׶ε��ж���Ч�ź�
-    input  wire          ertn_flush, //����WB�׶ε�ertnָ��ִ����Ч�ź�
-    input  wire          wb_ex     , //����WB�׶ε��쳣���������ź�
-    input  wire [ 5:0]   wb_ecode  , //����WB�׶ε��쳣����
-    input  wire [ 8:0]   wb_esubcode,//����WB�׶ε��쳣���͸�����
-    input  wire [31:0]   wb_vaddr   ,//����WB�׶εķô��ַ
-    input  wire [31:0]   wb_pc,      //д�صķ��ص�ַ
+    // 与硬件电路交互的接口信号
+    output wire [31:0]   ex_entry  , //送往pre-IF的异常入口地址
+    output wire [31:0]   ertn_entry, //送往pre-IF的返回入口地址
+    output wire          has_int   , //送往ID阶段的中断有效信号
+    input  wire          ertn_flush, //来自WB阶段的ertn指令执行有效信号
+    input  wire          wb_ex     , //来自WB阶段的异常处理触发信号
+    input  wire [ 5:0]   wb_ecode  , //来自WB阶段的异常类型
+    input  wire [ 8:0]   wb_esubcode,//来自WB阶段的异常类型辅助码
+    input  wire [31:0]   wb_vaddr   ,//来自WB阶段的访存地址
+    input  wire [31:0]   wb_pc,      //写回的返回地址
 // --- TLB ---
 
     //tlbsrch
@@ -2020,13 +1976,13 @@ module csr(
     input  wire          tlbsrch_found,
     input  wire [`TLBNUM_IDX-1:0] tlbsrch_idxgot,
     output wire [`TLBNUM_IDX-1:0] tlbindex_index_CSRoutput,
-        // ����CSRoutput��ʽ����������Ϊ�˱�����CPU Core��ͳһ�� 
+        // 带有CSRoutput格式的命名，是为了便于在CPU Core中统一。 
     
     //tlbrd
-    //Ҫע��tlbsrch��tlbrdʹ�õĲ���ͬһ�׶˿�
+    //要注意tlbsrch和tlbrd使用的并非同一套端口
     input  wire         inst_wb_tlbrd,
 
-    input  wire         tlbread_e, // ����ЧTLB��
+    input  wire         tlbread_e, // 是有效TLB项
     input  wire  [ 5:0] tlbread_ps,
     input  wire  [18:0] tlbread_vppn,
     input  wire  [ 9:0] tlbread_asid,
@@ -2045,7 +2001,7 @@ module csr(
     input  wire         tlbread_v1,
 
     // tlbwr & refill
-    // input  wire        inst_wb_tlbwr,   //����ź�û��,tlbrefillͬ��
+    // input  wire        inst_wb_tlbwr,   //这个信号没用,tlbrefill同理
     output wire        tlbwr_e,
     output wire [ 5:0] tlbwr_ps,
     output wire [18:0] tlbehi_vppn_CSRoutput,
@@ -2066,61 +2022,61 @@ module csr(
 );
     wire [ 7: 0] hw_int_in;
     wire         ipi_int_in;
-    // ��ǰģʽ��Ϣ
+    // 当前模式信息
     wire [31: 0] csr_crmd_data;
-    reg  [ 1: 0] csr_crmd_plv;      //CRMD��PLV�򣬵�ǰ��Ȩ�ȼ�
-    reg          csr_crmd_ie;       //CRMD��ȫ���ж�ʹ���ź�
-    reg          csr_crmd_da;       //CRMD��ֱ�ӵ�ַ����ʹ��
+    reg  [ 1: 0] csr_crmd_plv;      //CRMD的PLV域，当前特权等级
+    reg          csr_crmd_ie;       //CRMD的全局中断使能信号
+    reg          csr_crmd_da;       //CRMD的直接地址翻译使能
     reg          csr_crmd_pg;
     reg  [ 6: 5] csr_crmd_datf;
     reg  [ 8: 7] csr_crmd_datm;
     // reg  [31: 9] csr_crmd_r0;
 
-    // ����ǰģʽ��Ϣ
+    // 例外前模式信息
     wire [31: 0] csr_prmd_data;
-    reg  [ 1: 0] csr_prmd_pplv;     //CRMD��PLV���ֵ
-    reg          csr_prmd_pie;      //CRMD��IE���ֵ
+    reg  [ 1: 0] csr_prmd_pplv;     //CRMD的PLV域旧值
+    reg          csr_prmd_pie;      //CRMD的IE域旧值
 
-    // �������
-    wire [31: 0] csr_ecfg_data;     // ����λ31:13
-    reg  [12: 0] csr_ecfg_lie;      //�ֲ��ж�ʹ��λ
+    // 例外控制
+    wire [31: 0] csr_ecfg_data;     // 保留位31:13
+    reg  [12: 0] csr_ecfg_lie;      //局部中断使能位
 
-    // ����״̬
-    wire [31: 0] csr_estat_data;    // ����λ15:13, 31
-    reg  [12: 0] csr_estat_is;      // �����жϵ�״̬λ��8��Ӳ���ж�+1����ʱ���ж�+1���˼��ж�+2�������жϣ�
-    reg  [ 5: 0] csr_estat_ecode;   // ��������һ������
-    reg  [ 8: 0] csr_estat_esubcode;// �������Ͷ�������
+    // 例外状态
+    wire [31: 0] csr_estat_data;    // 保留位15:13, 31
+    reg  [12: 0] csr_estat_is;      // 例外中断的状态位（8个硬件中断+1个定时器中断+1个核间中断+2个软件中断）
+    reg  [ 5: 0] csr_estat_ecode;   // 例外类型一级编码
+    reg  [ 8: 0] csr_estat_esubcode;// 例外类型二级编码
 
-    // ���ⷵ�ص�ַERA
+    // 例外返回地址ERA
     reg  [31: 0] csr_era_data;  // data
 
-    // ������ڵ�ַeentry
-    wire [31: 0] csr_eentry_data;   // ����λ5:0
-    reg  [25: 0] csr_eentry_va;     // �����ж���ڸ�λ��ַ
-    // ���ݱ���
+    // 例外入口地址eentry
+    wire [31: 0] csr_eentry_data;   // 保留位5:0
+    reg  [25: 0] csr_eentry_va;     // 例外中断入口高位地址
+    // 数据保存
     reg  [31: 0] csr_save0_data;
     reg  [31: 0] csr_save1_data;
     reg  [31: 0] csr_save2_data;
     reg  [31: 0] csr_save3_data;
-    // �������ַ
+    // 出错虚地址
     wire         wb_ex_addr_err;
     reg  [31: 0] csr_badv_vaddr;
     wire [31: 0] csr_badv_data;
-    // ��ʱ����� 
+    // 定时器编号 
     wire [31: 0] csr_tid_data;
     reg  [31: 0] csr_tid_tid;
 
-    // ��ʱ������
+    // 定时器配置
     wire [31: 0] csr_tcfg_data;
     reg          csr_tcfg_en;
     reg          csr_tcfg_periodic;
     reg  [29: 0] csr_tcfg_initval;
     wire [31: 0] tcfg_next_value;
 
-    // ��ʱ����ֵ
+    // 定时器数值
     wire [31: 0] csr_tval_data;
     reg  [31: 0] timer_cnt;
-    // ��ʱ�ж����
+    // 定时中断清除
     wire [31: 0] csr_ticlr_data;
 
     // TLB
@@ -2153,7 +2109,7 @@ module csr(
     assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
     assign ex_entry = csr_eentry_data;
     assign ertn_entry = csr_era_data;
-    // CRMD��PLV��IE��
+    // CRMD的PLV、IE域
     always @(posedge clk) begin
         if (reset) begin
             csr_crmd_plv <= 2'b0;
@@ -2175,7 +2131,7 @@ module csr(
         end
     end
 
-    // CRMD��DA��PG��DATF��DATM��
+    // CRMD的DA、PG、DATF、DATM域
     always @(posedge clk) begin
         if(reset) begin
             csr_crmd_da   <= 1'b1;
@@ -2195,7 +2151,7 @@ module csr(
         end
     end
 
-    // PRMD��PPLV��PIE��
+    // PRMD的PPLV、PIE域
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_prmd_pplv <= csr_crmd_plv;
@@ -2209,7 +2165,7 @@ module csr(
         end
     end
 
-    // ECFG��LIE��
+    // ECFG的LIE域
     always @(posedge clk) begin
         if(reset)
             csr_ecfg_lie <= 13'b0;
@@ -2217,7 +2173,7 @@ module csr(
             csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
                         |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
     end
-    // ESTAT��IS��
+    // ESTAT的IS域
     assign hw_int_in = 8'b0;
     assign ipi_int_in= 1'b0;
     always @(posedge clk) begin
@@ -2229,7 +2185,7 @@ module csr(
                                | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
         end
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ӳ�ж�
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //硬中断
         csr_estat_is[10] <= 1'b0; 
 
         if (timer_cnt[31:0] == 32'b0) begin
@@ -2238,16 +2194,16 @@ module csr(
         else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
                 && csr_wvalue[`CSR_TICLR_CLR]) 
             csr_estat_is[11] <= 1'b0;
-        csr_estat_is[12] <= ipi_int_in;     // �˼��ж�
+        csr_estat_is[12] <= ipi_int_in;     // 核间中断
     end    
-    // ESTAT��Ecode��EsubCode��
+    // ESTAT的Ecode和EsubCode域
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
         end
     end
-    // ERA��PC��
+    // ERA的PC域
     always @(posedge clk) begin
         if(wb_ex)
             csr_era_data <= wb_pc;
@@ -2277,7 +2233,7 @@ module csr(
             csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
                             | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
     end
-    // BADV��VAddr��
+    // BADV的VAddr域
     assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
     always @(posedge clk) begin
         if (wb_ex && wb_ex_addr_err) begin
@@ -2295,7 +2251,7 @@ module csr(
         end
     end
 
-    // TCFG��EN��Periodic��InitVal��
+    // TCFG的EN、Periodic、InitVal域
     always @(posedge clk) begin
         if (reset) 
             csr_tcfg_en <= 1'b0;
@@ -2331,7 +2287,7 @@ module csr(
         end
     end
 
-    // TICLR��CLR��
+    // TICLR的CLR域
     assign csr_ticlr_clr = 1'b0;
 
     assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
@@ -2368,10 +2324,10 @@ module csr(
                       | {32{csr_num == `CSR_TLBRENTRY}} & tlbrentry_data;
 
 
-    // ------------ TLB -------------
-    // TLBIDX
+    //TLB
+    //TLBIDX
     assign tlbindex_index_CSRoutput = tlbindex_index;
-    assign tlbidx_data = {tlbindex_ne, 1'b0, tlbindex_ps, 8'h0, 12'h0, tlbindex_index};// �ٶ�TLBNUM=16,������Ҫ�޸ģ�
+    assign tlbidx_data = {tlbindex_ne, 1'b0, tlbindex_ps, 8'h0, 12'h0, tlbindex_index};// 假定TLBNUM=16,后续需要修改！
     always @(posedge clk) begin
         if (reset) begin
             tlbindex_index <= 4'b0;
@@ -2388,7 +2344,7 @@ module csr(
         end
         else if (inst_wb_tlbsrch) begin
             tlbindex_ne <= ~tlbsrch_found;
-            tlbindex_index <= tlbsrch_found ? tlbsrch_idxgot : tlbindex_index; // ������Ƕ��
+            tlbindex_index <= tlbsrch_found ? tlbsrch_idxgot : tlbindex_index; // 避免多层嵌套
         end
         else if (inst_wb_tlbrd) begin
             tlbindex_ps <= {6{tlbread_e}} & tlbread_ps;
@@ -2418,7 +2374,7 @@ module csr(
 
     assign tlbwr_g = tlbelo0_g && tlbelo1_g;
     // TLBELO0
-    assign tlbelo0_data = {4'h0, tlbelo0_ppn, 1'b0, tlbelo0_g, tlbelo0_mat, tlbelo0_plv, tlbelo0_d, tlbelo0_v};// �ٶ�PALEN=32,������Ҫ�޸ģ�
+    assign tlbelo0_data = {4'h0, tlbelo0_ppn, 1'b0, tlbelo0_g, tlbelo0_mat, tlbelo0_plv, tlbelo0_d, tlbelo0_v};// 假定PALEN=32,后续需要修改！
     always @(posedge clk) begin
         if (reset) begin
             tlbelo0_v <= 1'b0;
@@ -2468,7 +2424,7 @@ module csr(
     assign tlbwr_v0   = tlbelo0_v;
 
     // TLBELO1
-    assign tlbelo1_data = {4'h0, tlbelo1_ppn, 1'b0, tlbelo1_g, tlbelo1_mat, tlbelo1_plv, tlbelo1_d, tlbelo1_v};// �ٶ�PALEN=32,������Ҫ�޸ģ�
+    assign tlbelo1_data = {4'h0, tlbelo1_ppn, 1'b0, tlbelo1_g, tlbelo1_mat, tlbelo1_plv, tlbelo1_d, tlbelo1_v};// 假定PALEN=32,后续需要修改！
     always @(posedge clk) begin
         if (reset) begin
             tlbelo1_v <= 1'b0;
@@ -2546,8 +2502,8 @@ module csr(
     end
 endmodule
 
-// 32λBooth��λ����Ҫ����16�����ֻ�
-// 32λ�޷������˷���34λ�з������˷�����17�����ֻ�
+// 32位Booth两位乘需要生成16个部分积
+// 32位无符号数乘法→34位有符号数乘法，需17个部分积
 module Adder (
     input   [63:0] in1,
     input   [63:0] in2,
@@ -2584,11 +2540,11 @@ module Wallace_Mul (
     wire [16:0] sel_neg_2x_val;
     wire [16:0] sel_0_val;
     wire [18:0] debug;
-    // ��չ��34λ�Լ����޷������˷���ż��λ���ڴ�����
+    // 扩展成34位以兼容无符号数乘法（偶数位易于处理）
     wire [33:0] B_r;
     wire [33:0] B_m;
     wire [33:0] B_l;
-    wire [63:0] P [16:0];   // δ����Ĳ��ֻ�
+    wire [63:0] P [16:0];   // 未对齐的部分积
 
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -2610,7 +2566,7 @@ module Wallace_Mul (
     assign sel_2x      = (~B_l & B_m & B_r);                         // 011
     assign sel_0       = (B_l & B_m & B_r) | (~B_l & ~B_m & ~B_r);     // 000, 111
 
-    // ����λ������Ч��ѡȡ�ź�
+    // 奇数位才是有效的选取信号
     assign sel_x_val    = { sel_x[32], sel_x[30], sel_x[28], sel_x[26], sel_x[24],
                             sel_x[22], sel_x[20], sel_x[18], sel_x[16],
                             sel_x[14], sel_x[12], sel_x[10], sel_x[ 8],
@@ -2631,9 +2587,9 @@ module Wallace_Mul (
                             sel_0[22], sel_0[20], sel_0[18], sel_0[16],
                             sel_0[14], sel_0[12], sel_0[10], sel_0[ 8],
                             sel_0[ 6], sel_0[ 4], sel_0[ 2], sel_0[ 0]}; 
-    // debug�ź�ӦΪ0FFFF                                                                                              
+    // debug信号应为0FFFF                                                                                              
     assign debug        = sel_x_val + sel_neg_2x_val + sel_neg_x_val + sel_2x_val + sel_0_val;
-    // ʮ����δ����Ĳ��ֻ�
+    // 十六个未对齐的部分积
     assign {P[16], P[15], P[14], P[13], P[12],
             P[11], P[10], P[ 9], P[ 8],
             P[ 7], P[ 6], P[ 5], P[ 4],
@@ -2655,7 +2611,8 @@ module Wallace_Mul (
                 {64{sel_neg_2x_val[ 7]}}, {64{sel_neg_2x_val[ 6]}}, {64{sel_neg_2x_val[ 5]}}, {64{sel_neg_2x_val[ 4]}},
                 {64{sel_neg_2x_val[ 3]}}, {64{sel_neg_2x_val[ 2]}}, {64{sel_neg_2x_val[ 1]}}, {64{sel_neg_2x_val[ 0]}}} & {17{A2_sub}}; 
 
-//-----------------------------------------Level 1--------------------------------------------- 
+//Level 1
+
     wire [63:0] level_1 [11:0];
     Adder adder1_1 (
         .in1({P[15], 30'b0}),
@@ -2694,7 +2651,9 @@ module Wallace_Mul (
     );
     assign level_1[10] = P[0];
     assign level_1[11] = {P[16], 32'b0};
-//-----------------------------------------Level 2--------------------------------------------- 
+
+//Level 2
+
     wire [63:0] level_2 [7:0];
     Adder adder2_1 (
         .in1(level_1[0]),
@@ -2724,7 +2683,9 @@ module Wallace_Mul (
         .C(level_2[6]),
         .S(level_2[7])
     );
-//-----------------------------------------Level 3--------------------------------------------- 
+
+//Level 3
+
     wire [63:0] level_3 [5:0];
     Adder adder3_1 (
         .in1(level_2[0]),
@@ -2742,9 +2703,10 @@ module Wallace_Mul (
     );
     assign level_3[4] = level_2[6];
     assign level_3[5] = level_2[7];
-//-----------------------------------------��ˮ���з�-------------------------------------------
+//流水级切分
     
-//-----------------------------------------Level 4--------------------------------------------- 
+//Level 4
+
     wire [63:0] level_4 [3:0];
     Adder adder4_1 (
         .in1(level_3[0]),
@@ -2760,7 +2722,9 @@ module Wallace_Mul (
         .C(level_4[2]),
         .S(level_4[3])
     );
-//-----------------------------------------Level 5--------------------------------------------- 
+
+//Level 5
+
     wire [63:0] level_5 [2:0];
     Adder adder5_1 (
         .in1(level_4[0]),
@@ -2770,7 +2734,9 @@ module Wallace_Mul (
         .S(level_5[1])
     );
     assign level_5[2] = level_4[3]; 
-//-----------------------------------------Level 6--------------------------------------------- 
+
+//Level 6
+
     wire [63:0] level_6 [1:0];
     Adder adder6_1 (
         .in1(level_5[0]),
@@ -2779,7 +2745,9 @@ module Wallace_Mul (
         .C(level_6[0]),
         .S(level_6[1])
     );
-//-----------------------------------------��ˮ���з�-------------------------------------------
+
+//流水级切分
+
     reg  [63:0] level_6_r [1:0];
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -2795,11 +2763,11 @@ module Div(
     input  wire    resetn,
     input  wire    div,
     input  wire    div_signed,
-    input  wire [31:0] x,   //������
-    input  wire [31:0] y,   //����
-    output wire [31:0] s,   //��
-    output wire [31:0] r,   //����
-    output wire    complete //��������ź�
+    input  wire [31:0] x,   //被除数
+    input  wire [31:0] y,   //除数
+    output wire [31:0] s,   //商
+    output wire [31:0] r,   //余数
+    output wire    complete //除法完成信号
 );
 
     wire        sign_s;
@@ -2811,17 +2779,17 @@ module Div(
     reg  [63:0] x_pad;
     reg  [32:0] y_pad;
     reg  [31:0] s_r;
-    reg  [32:0] r_r;    // ��ǰ������
+    reg  [32:0] r_r;    // 当前的余数
     reg  [ 5:0] counter;
 
-// 1.ȷ������λ
+// 1.确定符号位
     assign sign_s = (x[31]^y[31]) & div_signed;
     assign sign_r = x[31] & div_signed;
     assign abs_x  = (div_signed & x[31]) ? (~x+1'b1): x;
     assign abs_y  = (div_signed & y[31]) ? (~y+1'b1): y;
-// 2.ѭ�������õ��̺���������ֵ
+// 2.循环迭代得到商和余数绝对值
     assign complete = counter == 6'd33;
-    //��ʼ��������
+    //初始化计数器
     always @(posedge div_clk) begin
         if(~resetn) begin
             counter <= 6'b0;
@@ -2833,7 +2801,7 @@ module Div(
                 counter <= counter + 1'b1;
         end
     end
-    //׼��������,counter=0
+    //准备操作数,counter=0
     always @(posedge div_clk) begin
         if(~resetn)
             {x_pad, y_pad} <= {64'b0, 33'b0};
@@ -2843,9 +2811,9 @@ module Div(
         end
     end
 
-    //��⵱ǰ�����ļ������
-    assign pre_r = r_r - y_pad;                     //δ�ָ������Ľ��
-    assign recover_r = pre_r[32] ? r_r : pre_r;     //�ָ������Ľ��
+    //求解当前迭代的减法结果
+    assign pre_r = r_r - y_pad;                     //未恢复余数的结果
+    assign recover_r = pre_r[32] ? r_r : pre_r;     //恢复余数的结果
     always @(posedge div_clk) begin
         if(~resetn) 
             s_r <= 32'b0;
@@ -2857,13 +2825,13 @@ module Div(
         if(~resetn)
             r_r <= 33'b0;
         if(div & ~complete) begin
-            if(~|counter)   //������ʼ��
+            if(~|counter)   //余数初始化
                 r_r <= {32'b0, abs_x[31]};
             else
                 r_r <=  (counter == 32) ? recover_r : {recover_r, x_pad[31 - counter]};
         end
     end
-// 3.���������̺�����
+// 3.调整最终商和余数
     assign s = div_signed & sign_s ? (~s_r+1'b1) : s_r;
     assign r = div_signed & sign_r ? (~r_r+1'b1) : r_r;
 endmodule
@@ -2933,41 +2901,41 @@ module bridge_sram_axi(
     output              data_sram_data_ok,
     output  [31:0]      data_sram_rdata
 );
-	// ״̬��״̬�Ĵ���
-	reg [4:0] ar_current_state;	// ������״̬��
+	// 状态机状态寄存器
+	reg [4:0] ar_current_state;	// 读请求状态机
 	reg [4:0] ar_next_state;
-	reg [4:0] r_current_state;	// ������״̬��
+	reg [4:0] r_current_state;	// 读数据状态机
 	reg [4:0] r_next_state;
-	reg [4:0] w_current_state;	// д�����д����״̬��
+	reg [4:0] w_current_state;	// 写请求和写数据状态机
 	reg [4:0] w_next_state;
-	reg [4:0] b_current_state;	// д��Ӧ״̬��
+	reg [4:0] b_current_state;	// 写相应状态机
 	reg [4:0] b_next_state;
-	// ��ַ�Ѿ����ֳɹ���δ��Ӧ���������Ҫ����
+	// 地址已经握手成功而未响应的情况，需要计数
 	reg [1:0] ar_resp_cnt;
 	reg [1:0] aw_resp_cnt;
 	reg [1:0] wd_resp_cnt;
-	// ���ݼĴ�����0-ָ��SRAM�Ĵ�����1-����SRAM�Ĵ���������id������
+	// 数据寄存器，0-指令SRAM寄存器，1-数据SRAM寄存器（根据id索引）
 	reg [31:0] buf_rdata [1:0];
-	// ������ص��ж��ź�
+	// 数据相关的判断信号
 	wire read_block;
-	// ���ɼĴ���
+	// 若干寄存器
     reg  [ 3:0] rid_r;
 
-	localparam  IDLE = 5'b1;         //����״̬������IDLE״̬  
+	localparam  IDLE = 5'b1;         //各个状态机共用IDLE状态  
 
 //state machine for read req channel
 
-    //������ͨ��״̬����������
+    //读请求通道状态独热码译码
     localparam  AR_REQ_START  	= 3'b010,
 				AR_REQ_END		= 3'b100;
-	//������ͨ��״̬��ʱ���߼�
+	//读请求通道状态机时序逻辑
 	always @(posedge aclk) begin
 		if(~aresetn)
 			ar_current_state <= IDLE;
 		else 
 			ar_current_state <= ar_next_state;
 	end
-	//������ͨ��״̬����̬����߼�
+	//读请求通道状态机次态组合逻辑
 	always @(*) begin
 		case(ar_current_state)
 			IDLE:begin
@@ -2989,18 +2957,20 @@ module bridge_sram_axi(
 			end
 		endcase
 	end
-//--------------------------------state machine for read response channel-------------------------------------------
-    //����Ӧͨ��״̬����������
+
+//state machine for read response channel
+
+    //读响应通道状态独热码译码
     localparam  R_DATA_START   	= 3'b010,
 				R_DATA_END		= 3'b100;
-    //����Ӧͨ��״̬��ʱ���߼�
+    //读响应通道状态机时序逻辑
 	always @(posedge aclk) begin
 		if(~aresetn)
 			r_current_state <= IDLE;
 		else 
 			r_current_state <= r_next_state;
 	end
-	//����Ӧͨ��״̬����̬����߼�
+	//读响应通道状态机次态组合逻辑
 	always @(*) begin
 		case(r_current_state)
 			IDLE:begin
@@ -3010,7 +2980,7 @@ module bridge_sram_axi(
 					r_next_state = IDLE;
 			end
 			R_DATA_START:begin
-				if(rvalid & rready & rlast) 	// �������
+				if(rvalid & rready & rlast) 	// 传输完毕
 					r_next_state = R_DATA_END;
 				else
 					r_next_state = R_DATA_START;
@@ -3024,19 +2994,19 @@ module bridge_sram_axi(
 
 //state machine for write req & data channel
 
-    //д����&д����ͨ��״̬����������
+    //写请求&写数据通道状态独热码译码
 	localparam  W_REQ_START      		= 5'b00010,
 				W_ADDR_RESP				= 5'b00100,
 				W_DATA_RESP      		= 5'b01000,
 				W_REQ_END				= 5'b10000;
-    //д����&д����ͨ��״̬��ʱ���߼�
+    //写请求&写数据通道状态机时序逻辑
 	always @(posedge aclk) begin
 		if(~aresetn)
 			w_current_state <= IDLE;
 		else 
 			w_current_state <= w_next_state;
 	end
-	//д����&д����ͨ��״̬����̬����߼�
+	//写请求&写数据通道状态机次态组合逻辑
 	always @(*) begin
 		case(w_current_state)
 			IDLE:begin
@@ -3078,17 +3048,17 @@ module bridge_sram_axi(
 
 //state machine for write response channel
 
-    //д��Ӧͨ��״̬����������
+    //写响应通道状态独热码译码
     localparam  B_START     = 3'b010,
 				B_END		= 3'b100;
-    //д��Ӧͨ��״̬��ʱ���߼�
+    //写响应通道状态机时序逻辑
 	always @(posedge aclk) begin
 		if(~aresetn)
 			b_current_state <= IDLE;
 		else 
 			b_current_state <= b_next_state;
 	end
-	//д��Ӧͨ��״̬����̬����߼�
+	//写响应通道状态机次态组合逻辑
 	always @(*) begin
 		case(b_current_state)
 			IDLE:begin
@@ -3117,10 +3087,10 @@ module bridge_sram_axi(
 			arid <= 4'b0;
 			araddr <= 32'b0;
 			arsize <= 3'b0;
-			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// ��ֵ
+			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// 常值
 		end
-		else if(ar_current_state[0]) begin	// ������״̬��Ϊ����״̬����������
-			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// ����RAM����������ָ��RAM
+		else if(ar_current_state[0]) begin	// 读请求状态机为空闲状态，更新数据
+			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// 数据RAM请求优先于指令RAM
 			araddr <= data_sram_req & ~data_sram_wr? data_sram_addr : inst_sram_addr;
 			arsize <= data_sram_req & ~data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
 		end
@@ -3131,7 +3101,7 @@ module bridge_sram_axi(
     always @(posedge aclk) begin
 		if(~aresetn)
 			ar_resp_cnt <= 2'b0;
-		else if(arvalid & arready & rvalid & rready)	// ����ַ������channelͬʱ�������
+		else if(arvalid & arready & rvalid & rready)	// 读地址和数据channel同时完成握手
 			ar_resp_cnt <= ar_resp_cnt;		
 		else if(arvalid & arready)
 			ar_resp_cnt <= ar_resp_cnt + 1'b1;
@@ -3148,9 +3118,9 @@ module bridge_sram_axi(
 		if(~aresetn) begin
 			awaddr <= 32'b0;
 			awsize <= 3'b0;
-			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// ��ֵ
+			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// 常值
 		end
-		else if(w_current_state[0]) begin	// д����״̬��Ϊ����״̬����������
+		else if(w_current_state[0]) begin	// 写请求状态机为空闲状态，更新数据
 			awaddr <= data_sram_wr? data_sram_addr : inst_sram_addr;
 			awsize <= data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
 		end
@@ -3163,9 +3133,9 @@ module bridge_sram_axi(
 		if(~aresetn) begin
 			wstrb <= 4'b0;
 			wdata <= 32'b0;
-			{wid, wlast} <= {4'b1, 1'b1};	// ��ֵ
+			{wid, wlast} <= {4'b1, 1'b1};	// 常值
 		end
-		else if(w_current_state[0]) begin	// д����״̬��Ϊ����״̬����������
+		else if(w_current_state[0]) begin	// 写请求状态机为空闲状态，更新数据
 			wstrb <= data_sram_wstrb;
 			wdata <= data_sram_wdata;
 		end
@@ -3194,10 +3164,10 @@ module bridge_sram_axi(
 			wd_resp_cnt <= wd_resp_cnt - 1'b1;
 		end
 	end
-    
+
 //rdata buffer
 
-	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// ��д��ַ��ͬ����д����������δд��
+	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// 读写地址相同且有写操作且数据未写入
 	always @(posedge aclk)begin
 		if(!aresetn)
 			{buf_rdata[1], buf_rdata[0]} <= 64'b0;
@@ -3209,10 +3179,10 @@ module bridge_sram_axi(
 	assign data_sram_data_ok = rid_r[0] & r_current_state[2] | bid[0] & bvalid & bready; 
 	
 	assign inst_sram_rdata = buf_rdata[0];
-	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rready����һ��
+	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rready的下一拍
 	assign inst_sram_addr_ok = ~arid[0] & arvalid & arready;
 
-	// data_ok ��������������Ϊ��Ҫ��buffer�������ݣ���Ҫ�ȵ���һ��
+	// data_ok 不采用如下是因为需要从buffer中拿数据，则要等到下一拍
 	// assign inst_sram_data_ok = ~rid[0] & rvalid & rready;
 
 	always @(posedge aclk)  begin
@@ -3221,287 +3191,4 @@ module bridge_sram_axi(
 		else if(rvalid & rready)
 			rid_r <= rid;
 	end	
-endmodule
-
-module tlb (
-    input  wire        clk,
-    input  wire        reset,
-
-    // search port 0 (for fetch)
-    input  wire [18:0] s0_vppn,
-    input  wire        s0_va_bit12, //����û�е���top��
-    input  wire [ 9:0] s0_asid,
-    output wire        s0_found,
-    output wire [$clog2(`TLBNUM)-1:0] s0_index,
-    output wire [19:0] s0_ppn,
-    output wire [ 5:0] s0_ps,
-    output wire [ 1:0] s0_plv,
-    output wire [ 1:0] s0_mat,
-    output wire        s0_d,
-    output wire        s0_v,
-
-    // search port 1 (for load/store)
-    input  wire [18:0] s1_vppn,
-    input  wire        s1_va_bit12,
-    input  wire [ 9:0] s1_asid,
-    output wire        s1_found,
-    output wire [$clog2(`TLBNUM)-1:0] s1_index,
-    output wire [19:0] s1_ppn,
-    output wire [ 5:0] s1_ps,
-    output wire [ 1:0] s1_plv,
-    output wire [ 1:0] s1_mat,
-    output wire        s1_d,
-    output wire        s1_v,
-
-    // invtlb opcode
-    input  wire        invtlb_valid,
-    input  wire [ 4:0] invtlb_op,
-
-    // write port
-    input  wire        inst_wb_tlbfill,
-
-    input  wire        we, //w(rite) e(nable)
-    input  wire [$clog2(`TLBNUM)-1:0] w_index,
-    input  wire        w_e,
-    input  wire [18:0] w_vppn,
-    input  wire [ 5:0] w_ps, // 22:4MB 12:4KB
-    input  wire [ 9:0] w_asid,
-    input  wire        w_g,
-
-    input  wire [19:0] w_ppn0,
-    input  wire [ 1:0] w_plv0,
-    input  wire [ 1:0] w_mat0,
-    input  wire        w_d0,
-    input  wire        w_v0,
-
-    input  wire [19:0] w_ppn1,
-    input  wire [ 1:0] w_plv1,
-    input  wire [ 1:0] w_mat1,
-    input  wire        w_d1,
-    input  wire        w_v1,
-
-    // read port
-    input  wire [$clog2(`TLBNUM)-1:0] r_index,
-    output wire        r_e,
-    output wire [18:0] r_vppn,
-    output wire [ 5:0] r_ps,
-    output wire [ 9:0] r_asid,
-    output wire        r_g,
-
-    output wire [19:0] r_ppn0,
-    output wire [ 1:0] r_plv0,
-    output wire [ 1:0] r_mat0,
-    output wire        r_d0,
-    output wire        r_v0,
-
-    output wire [19:0] r_ppn1,
-    output wire [ 1:0] r_plv1,
-    output wire [ 1:0] r_mat1,
-    output wire        r_d1,
-    output wire        r_v1
-);
-
-reg [`TLBNUM-1:0] tlb_e;
-reg [`TLBNUM-1:0] tlb_ps4MB; //pagesize 1:4MB, 0:4KB
-
-reg [18:0] tlb_vppn [`TLBNUM-1:0];
-reg [ 9:0] tlb_asid [`TLBNUM-1:0];
-reg        tlb_g    [`TLBNUM-1:0];
-
-reg [19:0] tlb_ppn0 [`TLBNUM-1:0];
-reg [ 1:0] tlb_plv0 [`TLBNUM-1:0];
-reg [ 1:0] tlb_mat0 [`TLBNUM-1:0];
-reg        tlb_d0   [`TLBNUM-1:0];
-reg        tlb_v0   [`TLBNUM-1:0];
-
-reg [19:0] tlb_ppn1 [`TLBNUM-1:0];
-reg [ 1:0] tlb_plv1 [`TLBNUM-1:0];
-reg [ 1:0] tlb_mat1 [`TLBNUM-1:0];
-reg        tlb_d1   [`TLBNUM-1:0];
-reg        tlb_v1   [`TLBNUM-1:0];
-
-wire [`TLBNUM-1:0] match0;
-wire [`TLBNUM-1:0] match1;
-
-wire [`TLBNUM-1:0] cond1;
-wire [`TLBNUM-1:0] cond2;
-wire [`TLBNUM-1:0] cond3;
-wire [`TLBNUM-1:0] cond4;
-
-wire [`TLBNUM-1:0] invtlb_mask [31:0];
-
-wire s0_whichpage;// ˫ҳ�е���һҳ
-wire s1_whichpage;
-
-///////// Read ////////////
-assign r_e    = tlb_e    [r_index];
-
-assign r_vppn = tlb_vppn [r_index];
-assign r_ps   = tlb_ps4MB[r_index] ? 6'd22 : 6'd12;
-assign r_asid = tlb_asid [r_index];
-assign r_g    = tlb_g    [r_index];
-
-/////////
-// [[[[[ ATTENTION ]]]]]
-// �����0��1����������ҵ�0��1�ǲ�ͬ��
-// �����0��1��ָ����˫ҳ�ṹ�µĵ�0ҳ�͵�1ҳ
-// ����λ�õ�0��1��ָ���ǲ���ͨ��0��IF���Ͳ���ͨ��1��EX��
-/////////
-
-assign r_ppn0 = tlb_ppn0 [r_index];
-assign r_plv0 = tlb_plv0 [r_index];
-assign r_mat0 = tlb_mat0 [r_index];
-assign r_d0   = tlb_d0   [r_index];
-assign r_v0   = tlb_v0   [r_index];
-
-assign r_ppn1 = tlb_ppn1 [r_index];
-assign r_plv1 = tlb_plv1 [r_index];
-assign r_mat1 = tlb_mat1 [r_index];
-assign r_d1   = tlb_d1   [r_index];
-assign r_v1   = tlb_v1   [r_index];
-
-///////// Search //////////
-
-// Match
-genvar i;
-generate
-    for (i = 0; i < `TLBNUM; i = i + 1) begin
-        assign match0[i] = (s0_vppn[18:10]==tlb_vppn[i][18:10])
-                            && (tlb_ps4MB[i] || s0_vppn[9:0]==tlb_vppn[i][9:0])
-                            && ((s0_asid==tlb_asid[i]) || tlb_g[i]);
-        assign match1[i] = (s1_vppn[18:10]==tlb_vppn[i][18:10])
-                            && (tlb_ps4MB[i] || s1_vppn[9:0]==tlb_vppn[i][9:0])
-                            && ((s1_asid==tlb_asid[i]) || tlb_g[i]);
-    end
-endgenerate
-
-assign s0_found = |match0;
-assign s1_found = |match1;
-
-// generate index
-assign s0_index =   match0[ 1] ? 4'd1  :
-                    match0[ 2] ? 4'd2  :
-                    match0[ 3] ? 4'd3  :
-                    match0[ 4] ? 4'd4  :
-                    match0[ 5] ? 4'd5  :
-                    match0[ 6] ? 4'd6  :
-                    match0[ 7] ? 4'd7  :
-                    match0[ 8] ? 4'd8  :
-                    match0[ 9] ? 4'd9  :
-                    match0[10] ? 4'd10 :
-                    match0[11] ? 4'd11 :
-                    match0[12] ? 4'd12 :
-                    match0[13] ? 4'd13 :
-                    match0[14] ? 4'd14 :
-                    match0[15] ? 4'd15 :
-                    4'd0; // Default, û���ҵ�ʱ��Ҫ��found��Ϊ0
-assign s1_index =   match1[ 1] ? 4'd1  :
-                    match1[ 2] ? 4'd2  :
-                    match1[ 3] ? 4'd3  :
-                    match1[ 4] ? 4'd4  :
-                    match1[ 5] ? 4'd5  :
-                    match1[ 6] ? 4'd6  :
-                    match1[ 7] ? 4'd7  :
-                    match1[ 8] ? 4'd8  :
-                    match1[ 9] ? 4'd9  :
-                    match1[10] ? 4'd10 :
-                    match1[11] ? 4'd11 :
-                    match1[12] ? 4'd12 :
-                    match1[13] ? 4'd13 :
-                    match1[14] ? 4'd14 :
-                    match1[15] ? 4'd15 :
-                    4'd0; // Default, û���ҵ�ʱ��Ҫ��found��Ϊ0
-
-assign s0_whichpage = tlb_ps4MB[s0_index] ? s0_vppn[9] : s0_va_bit12;
-assign s0_ps        = tlb_ps4MB[s0_index] ? 6'd22 : 6'd12;
-assign s0_ppn       = s0_whichpage ? tlb_ppn1[s0_index] : tlb_ppn0[s0_index];
-assign s0_plv       = s0_whichpage ? tlb_plv1[s0_index] : tlb_plv0[s0_index];
-assign s0_mat       = s0_whichpage ? tlb_mat1[s0_index] : tlb_mat0[s0_index];
-assign s0_d         = s0_whichpage ? tlb_d1  [s0_index] : tlb_d0  [s0_index];
-assign s0_v         = s0_whichpage ? tlb_v1  [s0_index] : tlb_v0  [s0_index];
-
-
-assign s1_whichpage = tlb_ps4MB[s1_index] ? s1_vppn[9] : s1_va_bit12;
-assign s1_ps        = tlb_ps4MB[s1_index] ? 6'd22 : 6'd12;
-assign s1_ppn       = s1_whichpage ? tlb_ppn1[s1_index] : tlb_ppn0[s1_index];
-assign s1_plv       = s1_whichpage ? tlb_plv1[s1_index] : tlb_plv0[s1_index];
-assign s1_mat       = s1_whichpage ? tlb_mat1[s1_index] : tlb_mat0[s1_index];
-assign s1_d         = s1_whichpage ? tlb_d1  [s1_index] : tlb_d0  [s1_index];
-assign s1_v         = s1_whichpage ? tlb_v1  [s1_index] : tlb_v0  [s1_index];
-
-/////////// Write ////////////
-wire [$clog2(`TLBNUM)-1:0] write_index;
-// assign write_index = inst_wb_tlbfill ? rand_num[3:0] : w_index;
- assign write_index = inst_wb_tlbfill ? 4'h0 : w_index; // For debug use
-
-always @ (posedge clk) begin
-    if (we) begin
-        tlb_e      [write_index] <= w_e;
-        tlb_ps4MB  [write_index] <= (w_ps == 6'd22);
-
-        tlb_vppn   [write_index] <= w_vppn;
-        tlb_asid   [write_index] <= w_asid;
-        tlb_g      [write_index] <= w_g;
-
-        tlb_ppn0   [write_index] <= w_ppn0;
-        tlb_plv0   [write_index] <= w_plv0;
-        tlb_mat0   [write_index] <= w_mat0;
-        tlb_d0     [write_index] <= w_d0;
-        tlb_v0     [write_index] <= w_v0;
-
-        tlb_ppn1   [write_index] <= w_ppn1;
-        tlb_plv1   [write_index] <= w_plv1;
-        tlb_mat1   [write_index] <= w_mat1;
-        tlb_d1     [write_index] <= w_d1;
-        tlb_v1     [write_index] <= w_v1;
-    end 
-    else if(invtlb_valid)
-        tlb_e <= ~invtlb_mask[invtlb_op] & tlb_e; // ִ��invtlb
-end
-
-/////////////// INVTLB SPECIAL ///////////////
-
-// cond 1~4 �뿴���� P221
-
-generate
-    for (i = 0; i < `TLBNUM; i = i + 1) begin
-       assign cond1[i] = ~tlb_g[i];
-       assign cond2[i] =  tlb_g[i];
-       assign cond3[i] = s1_asid == tlb_asid[i];
-       assign cond4[i] = (s1_vppn[18:10] == tlb_vppn[i][18:10])&&(tlb_ps4MB[i]||(s1_vppn[9:0] == tlb_vppn[i][9:0]));
-    end
-endgenerate
-
-assign invtlb_mask[0] = 16'hffff;  
-assign invtlb_mask[1] = 16'hffff;
-assign invtlb_mask[2] = cond2;
-assign invtlb_mask[3] = cond1;
-assign invtlb_mask[4] = cond1 & cond3;
-assign invtlb_mask[5] = cond1 & cond3 & cond4;
-assign invtlb_mask[6] = (cond1|cond3) & cond4;
-generate
-    for (i = 7; i < 32; i = i + 1) begin
-        assign invtlb_mask[i] = 16'b0;
-    end
-endgenerate
-
-////////////// RANDOM GEN //////////////
-// reg [7:0] rand_num;
-// always@(posedge clk)begin
-// 	if(reset)
-// 		rand_num <= 8'h15;
-//     else
-//         rand_num[7:0] <= {rand_num[6:0], rand_num[1] ^ rand_num[2] ^ rand_num[7]};
-// end
-reg [3:0] rand_num;
-always @(posedge clk ) begin
-    if (reset) 
-        rand_num <=4'd14;
-    else if(inst_wb_tlbfill && we)
-        rand_num <= rand_num + 4'h1;
-end
-// ATTENTION! �ص㣡
-// ˵�������������������ǰ���exp18�Ĳ��Ե�д�ģ���Ȼ�����˲��Ե㡣
-// ϣ��֮���ʵ�飬�����Բ���������ĸ��š�
-
 endmodule
