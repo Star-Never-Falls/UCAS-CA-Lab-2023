@@ -110,10 +110,10 @@ reg               tlb_v1   [TLBNUM-1:0];
 generate
     for (idx = 0; idx < TLBNUM; idx = idx + 1)
     begin : MATCH
-        assign match0[idx] = (s0_vppn[18:9] == tlb_vppn[idx][18:9])
+        assign match0[idx] = tlb_e[idx] && (s0_vppn[18:9] == tlb_vppn[idx][18:9])
                           && (tlb_ps4MB[idx] || s0_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s0_asid == tlb_asid[idx] || tlb_g[idx]);
-        assign match1[idx] = (s1_vppn[18:9] == tlb_vppn[idx][18:9])
+        assign match1[idx] = tlb_e[idx] && (s1_vppn[18:9] == tlb_vppn[idx][18:9])
                           && (tlb_ps4MB[idx] || s1_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s1_asid == tlb_asid[idx] || tlb_g[idx]);
     end
