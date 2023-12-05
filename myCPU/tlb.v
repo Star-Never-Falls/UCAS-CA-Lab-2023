@@ -110,10 +110,10 @@ reg               tlb_v1   [TLBNUM-1:0];
 generate
     for (idx = 0; idx < TLBNUM; idx = idx + 1)
     begin : MATCH
-        assign match0[idx] = tlb_e[idx] && (s0_vppn[18:9] == tlb_vppn[idx][18:9])
+        assign match0[idx] = (s0_vppn[18:9] == tlb_vppn[idx][18:9])
                           && (tlb_ps4MB[idx] || s0_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s0_asid == tlb_asid[idx] || tlb_g[idx]);
-        assign match1[idx] = tlb_e[idx] && (s1_vppn[18:9] == tlb_vppn[idx][18:9])
+        assign match1[idx] = (s1_vppn[18:9] == tlb_vppn[idx][18:9])
                           && (tlb_ps4MB[idx] || s1_vppn[8:0] == tlb_vppn[idx][8:0])
                           && (s1_asid == tlb_asid[idx] || tlb_g[idx]);
     end
@@ -188,15 +188,18 @@ assign inv_match = (invtlb_op == 5'd0 || invtlb_op == 5'd1) ? {TLBNUM{1'b1}} :
                     invtlb_op == 5'd5                       ? inv_match_5    :
                     invtlb_op == 5'd6                       ? match1         :
                     ~tlb_e; // defalt: do nothing
+
+// tlb_e assignment
 always @(posedge clk) begin
-    if (invtlb_valid)
-        tlb_e = ~inv_match & tlb_e;
+    if (we)
+        tlb_e[w_index] <= w_e;
+    else if (invtlb_valid)
+        tlb_e          <= ~inv_match & tlb_e;
 end
 
 // write TLB
 always @(posedge clk) begin
     if (we) begin
-        tlb_e    [w_index] <= w_e;
         tlb_vppn [w_index] <= w_vppn;
         tlb_ps4MB[w_index] <= w_ps == 6'd21;
         tlb_asid [w_index] <= w_asid;
