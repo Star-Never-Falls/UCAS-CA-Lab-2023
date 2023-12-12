@@ -42,8 +42,8 @@
     `define CSR_TLBELO1     14'h13
     `define CSR_ASID        14'h18
     `define CSR_TLBRENTRY   14'h88
-    `define CSR_DMW0        14'h180     // EXP19
-    `define CSR_DMW1        14'h181     // EXP19
+    `define CSR_DMW0        14'h180     
+    `define CSR_DMW1        14'h181     
     // TODO: Cache-related csr_num 
 
     // macros for index
@@ -95,46 +95,46 @@ module mycpu_top(
     input  aclk   ,
     input  aresetn,
     // read req channel
-    output [ 3:0] arid   , // è¯»è¯·æ±‚ID
-    output [31:0] araddr , // è¯»è¯·æ±‚åœ°å€
-    output [ 7:0] arlen  , // è¯»è¯·æ±‚ä¼ è¾“é•¿åº¦ï¼ˆæ•°æ®ä¼ è¾“æ‹æ•°ï¼‰
-    output [ 2:0] arsize , // è¯»è¯·æ±‚ä¼ è¾“å¤§å°ï¼ˆæ•°æ®ä¼ è¾“æ¯æ‹çš„å­—èŠ‚æ•°ï¼‰
-    output [ 1:0] arburst, // ä¼ è¾“ç±»å‹
-    output [ 1:0] arlock , // åŸå­é”
-    output [ 3:0] arcache, // Cacheå±æ€§
-    output [ 2:0] arprot , // ä¿æŠ¤å±æ€§
-    output        arvalid, // è¯»è¯·æ±‚åœ°å€æœ‰æ•ˆ
-    input         arready, // è¯»è¯·æ±‚åœ°å€æ¡æ‰‹ä¿¡å·
+    output [ 3:0] arid   , // ¶ÁÇëÇóID
+    output [31:0] araddr , // ¶ÁÇëÇóµØÖ·
+    output [ 7:0] arlen  , // ¶ÁÇëÇó´«Êä³¤¶È£¨Êı¾İ´«ÊäÅÄÊı£©
+    output [ 2:0] arsize , // ¶ÁÇëÇó´«Êä´óĞ¡£¨Êı¾İ´«ÊäÃ¿ÅÄµÄ×Ö½ÚÊı£©
+    output [ 1:0] arburst, // ´«ÊäÀàĞÍ
+    output [ 1:0] arlock , // Ô­×ÓËø
+    output [ 3:0] arcache, // CacheÊôĞÔ
+    output [ 2:0] arprot , // ±£»¤ÊôĞÔ
+    output        arvalid, // ¶ÁÇëÇóµØÖ·ÓĞĞ§
+    input         arready, // ¶ÁÇëÇóµØÖ·ÎÕÊÖĞÅºÅ
     // read response channel
-    input [ 3:0]  rid    , // è¯»è¯·æ±‚IDå·ï¼ŒåŒä¸€è¯·æ±‚ridä¸aridä¸€è‡´
-    input [31:0]  rdata  , // è¯»è¯·æ±‚è¯»å‡ºçš„æ•°æ®
-    input [ 1:0]  rresp  , // è¯»è¯·æ±‚æ˜¯å¦å®Œæˆ                        [å¯å¿½ç•¥]
-    input         rlast  , // è¯»è¯·æ±‚æœ€åä¸€æ‹æ•°æ®çš„æŒ‡ç¤ºä¿¡å·           [å¯å¿½ç•¥]
-    input         rvalid , // è¯»è¯·æ±‚æ•°æ®æœ‰æ•ˆ
-    output        rready , // Masterç«¯å‡†å¤‡å¥½æ¥å—æ•°æ®
+    input [ 3:0]  rid    , // ¶ÁÇëÇóIDºÅ£¬Í¬Ò»ÇëÇóridÓëaridÒ»ÖÂ
+    input [31:0]  rdata  , // ¶ÁÇëÇó¶Á³öµÄÊı¾İ
+    input [ 1:0]  rresp  , // ¶ÁÇëÇóÊÇ·ñÍê³É                        [¿ÉºöÂÔ]
+    input         rlast  , // ¶ÁÇëÇó×îºóÒ»ÅÄÊı¾İµÄÖ¸Ê¾ĞÅºÅ           [¿ÉºöÂÔ]
+    input         rvalid , // ¶ÁÇëÇóÊı¾İÓĞĞ§
+    output        rready , // Master¶Ë×¼±¸ºÃ½ÓÊÜÊı¾İ
     // write req channel
-    output [ 3:0] awid   , // å†™è¯·æ±‚çš„IDå·
-    output [31:0] awaddr , // å†™è¯·æ±‚çš„åœ°å€
-    output [ 7:0] awlen  , // å†™è¯·æ±‚ä¼ è¾“é•¿åº¦ï¼ˆæ‹æ•°ï¼‰
-    output [ 2:0] awsize , // å†™è¯·æ±‚ä¼ è¾“æ¯æ‹å­—èŠ‚æ•°
-    output [ 1:0] awburst, // å†™è¯·æ±‚ä¼ è¾“ç±»å‹
-    output [ 1:0] awlock , // åŸå­é”
-    output [ 3:0] awcache, // Cacheå±æ€§
-    output [ 2:0] awprot , // ä¿æŠ¤å±æ€§
-    output        awvalid, // å†™è¯·æ±‚åœ°å€æœ‰æ•ˆ
-    input         awready, // Slaveç«¯å‡†å¤‡å¥½æ¥å—åœ°å€ä¼ è¾“   
+    output [ 3:0] awid   , // Ğ´ÇëÇóµÄIDºÅ
+    output [31:0] awaddr , // Ğ´ÇëÇóµÄµØÖ·
+    output [ 7:0] awlen  , // Ğ´ÇëÇó´«Êä³¤¶È£¨ÅÄÊı£©
+    output [ 2:0] awsize , // Ğ´ÇëÇó´«ÊäÃ¿ÅÄ×Ö½ÚÊı
+    output [ 1:0] awburst, // Ğ´ÇëÇó´«ÊäÀàĞÍ
+    output [ 1:0] awlock , // Ô­×ÓËø
+    output [ 3:0] awcache, // CacheÊôĞÔ
+    output [ 2:0] awprot , // ±£»¤ÊôĞÔ
+    output        awvalid, // Ğ´ÇëÇóµØÖ·ÓĞĞ§
+    input         awready, // Slave¶Ë×¼±¸ºÃ½ÓÊÜµØÖ·´«Êä   
     // write data channel
-    output [ 3:0] wid    , // å†™è¯·æ±‚çš„IDå·
-    output [31:0] wdata  , // å†™è¯·æ±‚çš„å†™æ•°æ®
-    output [ 3:0] wstrb  , // å†™è¯·æ±‚å­—èŠ‚é€‰é€šä½
-    output        wlast  , // å†™è¯·æ±‚çš„æœ€åä¸€æ‹æ•°æ®çš„æŒ‡ç¤ºä¿¡å·
-    output        wvalid , // å†™æ•°æ®æœ‰æ•ˆ
-    input         wready , // Slaveç«¯å‡†å¤‡å¥½æ¥å—å†™æ•°æ®ä¼ è¾“   
+    output [ 3:0] wid    , // Ğ´ÇëÇóµÄIDºÅ
+    output [31:0] wdata  , // Ğ´ÇëÇóµÄĞ´Êı¾İ
+    output [ 3:0] wstrb  , // Ğ´ÇëÇó×Ö½ÚÑ¡Í¨Î»
+    output        wlast  , // Ğ´ÇëÇóµÄ×îºóÒ»ÅÄÊı¾İµÄÖ¸Ê¾ĞÅºÅ
+    output        wvalid , // Ğ´Êı¾İÓĞĞ§
+    input         wready , // Slave¶Ë×¼±¸ºÃ½ÓÊÜĞ´Êı¾İ´«Êä   
     // write response channel
-    input  [ 3:0] bid    , // å†™è¯·æ±‚çš„IDå·            [å¯å¿½ç•¥]
-    input  [ 1:0] bresp  , // å†™è¯·æ±‚å®Œæˆä¿¡å·          [å¯å¿½ç•¥]
-    input         bvalid , // å†™è¯·æ±‚å“åº”æœ‰æ•ˆ
-    output        bready , // Masterç«¯å‡†å¤‡å¥½æ¥æ”¶å“åº”ä¿¡å·
+    input  [ 3:0] bid    , // Ğ´ÇëÇóµÄIDºÅ            [¿ÉºöÂÔ]
+    input  [ 1:0] bresp  , // Ğ´ÇëÇóÍê³ÉĞÅºÅ          [¿ÉºöÂÔ]
+    input         bvalid , // Ğ´ÇëÇóÏìÓ¦ÓĞĞ§
+    output        bready , // Master¶Ë×¼±¸ºÃ½ÓÊÕÏìÓ¦ĞÅºÅ
     // trace debug interface
     output wire [31:0] debug_wb_pc,
     output wire [ 3:0] debug_wb_rf_we,
@@ -323,7 +323,7 @@ module mycpu_core(
     wire [31:0] csr_wvalue;
     wire [31:0] ex_entry;
     wire [31:0] ertn_entry;
-    wire [31:0] ertnentry_refetchtarget;    // (TLB) REUSE ERTN FOR REFETCH 
+    wire [31:0] refetch_target;    // (TLB) REUSE ERTN FOR REFETCH 
 
     wire        has_int;
     wire        ertn_flush;
@@ -333,7 +333,7 @@ module mycpu_core(
     wire [ 5:0] wb_ecode;
     wire [ 8:0] wb_esubcode;
 
-// --- TLB ---
+// TLB
     // search port 0 (for fetch)
     wire [18:0] s0_vppn;
     wire        s0_va_bit12;
@@ -367,7 +367,7 @@ module mycpu_core(
     // write port
     wire        inst_wb_tlbfill;
 
-    wire        tlbwe; //w(rite) e(nable)
+    wire        tlb_we; //w(rite) e(nable)
     wire [$clog2(`TLBNUM)-1:0] w_index;
     wire        w_e;
     wire [18:0] tlbehi_vppn_CSRoutput;
@@ -415,14 +415,14 @@ module mycpu_core(
     wire                      inst_wb_tlbrd;
     
     // tlb block
-    wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip;
-    wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip;
+    wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_zip;
+    wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_zip;
 
     wire                      wb_refetch_flush;
 
-// --- END OF TLB --- 
+//END OF TLB
 
-    assign ertnentry_refetchtarget = ertn_flush ? ertn_entry :
+    assign refetch_target = ertn_flush ? ertn_entry :
                                      debug_wb_pc + 32'd4; // Refetch Target
         // ertn_flush and wb_refetch_flush will never be valid simultaneously  
     IFreg my_ifReg(
@@ -448,7 +448,7 @@ module mycpu_core(
         .wb_ex(wb_ex),
         .ertn_flush(ertn_flush | wb_refetch_flush),
         .ex_entry(ex_entry),
-        .ertn_entry(ertnentry_refetchtarget)
+        .ertn_entry(refetch_target)
     );
 
     IDreg my_idReg(
@@ -468,8 +468,8 @@ module mycpu_core(
         .ms_rf_zip(ms_rf_zip),
         .es_rf_zip(es_rf_zip),
 
-        .es_tlb_blk_zip(es_tlb_blk_zip),
-        .ms_tlb_blk_zip(ms_tlb_blk_zip),
+        .es_tlb_zip(es_tlb_zip),
+        .ms_tlb_zip(ms_tlb_zip),
 
         .has_int(has_int),
         .wb_ex(wb_ex|ertn_flush|wb_refetch_flush)
@@ -486,7 +486,7 @@ module mycpu_core(
         .ms_allowin(ms_allowin),
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
-        .es_tlb_blk_zip(es_tlb_blk_zip),
+        .es_tlb_zip(es_tlb_zip),
         .es2ms_valid(es2ms_valid),
         // .ms_wait_data_ok(ms_wait_data_ok),
         
@@ -525,7 +525,7 @@ module mycpu_core(
         .ms_allowin(ms_allowin),
         .es2ms_bus(es2ms_bus),
         .es_rf_zip(es_rf_zip),
-        .ms_tlb_blk_zip(ms_tlb_blk_zip),
+        .ms_tlb_zip(ms_tlb_zip),
         .es2ms_valid(es2ms_valid),
         // .ms_wait_data_ok(ms_wait_data_ok),
         
@@ -572,7 +572,7 @@ module mycpu_core(
 
         .inst_wb_tlbfill(inst_wb_tlbfill),
         .inst_wb_tlbsrch(inst_wb_tlbsrch),
-        .tlbwe      (tlbwe),
+        .tlb_we      (tlb_we),
         .inst_wb_tlbrd(inst_wb_tlbrd),
         .wb_tlbsrch_found(wb_tlbsrch_found),
         .wb_tlbsrch_idxgot(wb_tlbsrch_idxgot),
@@ -591,7 +591,7 @@ module mycpu_core(
 
         .has_int    (has_int   ),
         .ex_entry   (ex_entry  ),
-        .ertn_entry (ertn_entry),// TODO: æŠŠERTN_ENTRYæ”¹æ‰ï¼ŒåŠ å…¥Refetchçš„éƒ¨åˆ†
+        .ertn_entry (ertn_entry),// TODO: °ÑERTN_ENTRY¸Äµô£¬¼ÓÈëRefetchµÄ²¿·Ö
         .ertn_flush (ertn_flush),
         .wb_ex      (wb_ex     ),
         .wb_pc      (wb_pc     ),
@@ -601,7 +601,7 @@ module mycpu_core(
 
         // CSR-TLB
         .inst_wb_tlbsrch(inst_wb_tlbsrch),
-        .tlbsrch_found(wb_tlbsrch_found), //EXç”Ÿæˆï¼ŒWBå†™å…¥ï¼Œä¸‹åŒ
+        .tlbsrch_found(wb_tlbsrch_found), //EXÉú³É£¬WBĞ´Èë£¬ÏÂÍ¬
         .tlbsrch_idxgot(wb_tlbsrch_idxgot),
         .tlbindex_index_CSRoutput(tlbindex_index_CSRoutput),
 
@@ -677,7 +677,7 @@ module mycpu_core(
 
         .inst_wb_tlbfill(inst_wb_tlbfill),
 
-        .we         (tlbwe     ),
+        .we         (tlb_we     ),
         .w_index    (tlbindex_index_CSRoutput),
         .w_e        (w_e       ),
         .w_vppn     (tlbehi_vppn_CSRoutput),
@@ -741,13 +741,13 @@ module IFreg(
     output wire [`FS2DS_LEN -1:0]  fs2ds_bus,
     // exception interface
     input  wire         wb_ex,
-    input  wire         ertn_flush, // MODIFIED: TLB REFETCH REUSED; FOR DETAILS SEE MYCPU.CORE
+    input  wire         ertn_flush, 
     input  wire [31:0]  ex_entry,   
-    input  wire [31:0]  ertn_entry  // MODIFIED: TLB REFETCH REUSED; FOR DETAILS SEE MYCPU.CORE
+    input  wire [31:0]  ertn_entry  
 );
     wire        pf_ready_go;
     wire        to_fs_valid;
-    reg         pf_block;
+    reg         instruction_hint;
     reg         fs_valid;
     wire        fs_ready_go;
     wire        fs_allowin;
@@ -770,12 +770,12 @@ module IFreg(
     wire [31:0] fs_inst;
     reg  [31:0] fs_pc;
     reg  [31:0] fs_inst_buf;
-    reg         inst_buf_valid;  // åˆ¤æ–­æŒ‡ä»¤ç¼“å­˜æ˜¯å¦æœ‰æ•ˆ
-    reg         inst_sram_addr_ack;
+    reg         inst_buf_valid;  // ÅĞ¶ÏÖ¸Áî»º´æÊÇ·ñÓĞĞ§
+    reg         inst_sram_addr_finish;
 
     wire        fs_cancel;
     wire        pf_cancel;
-    reg         inst_discard;   // åˆ¤æ–­cancelä¹‹åæ˜¯å¦éœ€è¦ä¸¢æ‰ä¸€æ¡æŒ‡ä»¤
+    reg         inst_discard;   // ÅĞ¶ÏcancelÖ®ºóÊÇ·ñĞèÒª¶ªµôÒ»ÌõÖ¸Áî
 
     wire        fs_except_adef;
 
@@ -784,7 +784,7 @@ module IFreg(
 //pre-IF signal
 
     assign pf_ready_go      = inst_sram_req & inst_sram_addr_ok; 
-    assign to_fs_valid      = pf_ready_go & ~pf_cancel & ~pf_block;
+    assign to_fs_valid      = pf_ready_go & ~pf_cancel & ~instruction_hint;
     assign seq_pc           = fs_pc + 3'h4;  
     assign nextpc           = wb_ex_r? ex_entry_r: wb_ex? ex_entry:
                               ertn_flush_r? ertn_entry_r: ertn_flush? ertn_entry:
@@ -806,28 +806,26 @@ module IFreg(
             br_target_r <= br_target;
             br_taken_r <= 1'b1;
         end
-        // è‹¥å¯¹åº”åœ°å€å·²ç»è·å¾—äº†æ¥è‡ªæŒ‡ä»¤SRAMçš„okï¼Œåç»­nextpcä¸å†ä»å¯„å­˜å™¨ä¸­å–
         else if(pf_ready_go) begin
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
         end
     end
     always @(posedge clk) begin
         if(~resetn)
-            pf_block <= 1'b0;
-        else if(pf_cancel & ~pf_block & ~axi_arid[0] & ~inst_sram_data_ok)
-            pf_block <= 1'b1;
+            instruction_hint <= 1'b0;
+        else if(pf_cancel & ~instruction_hint & ~axi_arid[0] & ~inst_sram_data_ok)
+            instruction_hint <= 1'b1;
         else if(inst_sram_data_ok)
-            pf_block <= 1'b0;
+            instruction_hint <= 1'b0;
     end
 
-    // åˆ¤æ–­å½“å‰åœ°å€æ˜¯å¦å·²ç»æ¡æ‰‹æˆåŠŸï¼Œè‹¥æˆåŠŸåˆ™æ‹‰ä½reqï¼Œé¿å…é‡å¤ç”³è¯·
     always @(posedge clk) begin
         if(~resetn)
-            inst_sram_addr_ack <= 1'b0;
+            inst_sram_addr_finish <= 1'b0;
         else if(pf_ready_go)
-            inst_sram_addr_ack <= 1'b1;
+            inst_sram_addr_finish <= 1'b1;
         else if(inst_sram_data_ok)
-            inst_sram_addr_ack <= 1'b0;
+            inst_sram_addr_finish <= 1'b0;
     end
 
 //IF signal
@@ -839,14 +837,14 @@ module IFreg(
         if(~resetn)
             fs_valid <= 1'b0;
         else if(fs_allowin)
-            fs_valid <= to_fs_valid; // åœ¨resetæ’¤é”€çš„ä¸‹ä¸€ä¸ªæ—¶é’Ÿä¸Šå‡æ²¿æ‰å¼€å§‹å–æŒ‡
+            fs_valid <= to_fs_valid; // ÔÚreset³·ÏúµÄÏÂÒ»¸öÊ±ÖÓÉÏÉıÑØ²Å¿ªÊ¼È¡Ö¸
         else if(fs_cancel)
             fs_valid <= 1'b0;
     end
 
 //inst sram interface
 
-    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~pf_block & ~inst_sram_addr_ack;
+    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~instruction_hint & ~inst_sram_addr_finish;
     assign inst_sram_wr     = |inst_sram_wstrb;
     assign inst_sram_wstrb  = 4'b0;
     assign inst_sram_addr   = nextpc;
@@ -856,12 +854,11 @@ module IFreg(
 //cancel relevant
 
     assign fs_cancel = wb_ex | ertn_flush | br_taken;
-    // assign pf_cancel = 1'b0;       // pre-IFæ— éœ€è¢«cancelï¼ŒåŸå› æ˜¯åœ¨ç»™å‡ºnextpcæ—¶çš„å€¼éƒ½æ˜¯æ­£ç¡®çš„
     assign pf_cancel = fs_cancel;
     always @(posedge clk) begin
         if(~resetn)
             inst_discard <= 1'b0;
-        // æµæ°´çº§å–æ¶ˆï¼šå½“pre-IFé˜¶æ®µå‘é€é”™è¯¯åœ°å€è¯·æ±‚å·²è¢«æŒ‡ä»¤SRAMæ¥å— or IFå†…æœ‰æœ‰æ•ˆæŒ‡ä»¤ä¸”æ­£åœ¨ç­‰å¾…æ•°æ®è¿”å›æ—¶ï¼Œéœ€è¦ä¸¢å¼ƒä¸€æ¡æŒ‡ä»¤
+        // Á÷Ë®¼¶È¡Ïû£ºµ±pre-IF½×¶Î·¢ËÍ´íÎóµØÖ·ÇëÇóÒÑ±»Ö¸ÁîSRAM½ÓÊÜ or IFÄÚÓĞÓĞĞ§Ö¸ÁîÇÒÕıÔÚµÈ´ıÊı¾İ·µ»ØÊ±£¬ĞèÒª¶ªÆúÒ»ÌõÖ¸Áî
         else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & inst_sram_req)
             inst_discard <= 1'b1;
         else if(inst_discard & inst_sram_data_ok)
@@ -876,15 +873,15 @@ module IFreg(
         else if(to_fs_valid & fs_allowin)
             fs_pc <= nextpc;
     end
-    // è®¾ç½®å¯„å­˜å™¨ï¼Œæš‚å­˜æŒ‡ä»¤ï¼Œå¹¶ç”¨validä¿¡å·è¡¨ç¤ºå…¶å†…æŒ‡ä»¤æ˜¯å¦æœ‰æ•ˆ
+    // ÉèÖÃ¼Ä´æÆ÷£¬Ôİ´æÖ¸Áî£¬²¢ÓÃvalidĞÅºÅ±íÊ¾ÆäÄÚÖ¸ÁîÊÇ·ñÓĞĞ§
     always @(posedge clk) begin
         if(~resetn) begin
             fs_inst_buf <= 32'b0;
             inst_buf_valid <= 1'b0;
         end
-        else if(to_fs_valid & fs_allowin)   // ç¼“å­˜å·²ç»æµå…¥IFçº§
+        else if(to_fs_valid & fs_allowin)   // »º´æÒÑ¾­Á÷ÈëIF¼¶
             inst_buf_valid <= 1'b0;
-        else if(fs_cancel)                  // IFå–æ¶ˆåéœ€è¦æ¸…ç©ºå½“å‰buffer
+        else if(fs_cancel)                  // IFÈ¡ÏûºóĞèÒªÇå¿Õµ±Ç°buffer
             inst_buf_valid <= 1'b0;
         else if(~inst_buf_valid & inst_sram_data_ok & ~inst_discard) begin
             fs_inst_buf <= fs_inst;
@@ -911,8 +908,8 @@ module IDreg(
     input  wire [37:0] ws_rf_zip, // {ws_rf_we, ws_rf_waddr, ws_rf_wdata}
     input  wire [39:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
     input  wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
-    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip,
-    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip,
+    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_zip,
+    input  wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_zip,
     // exception interface
     input  wire        has_int,
     input  wire        wb_ex
@@ -965,11 +962,11 @@ module IDreg(
     wire [15:0] op_25_22_d;
     wire [ 3:0] op_21_20_d;
     wire [31:0] op_19_15_d;
-//è®¡æ•°å™¨æŒ‡ä»¤
+//¼ÆÊıÆ÷Ö¸Áî
     wire        inst_rdcntid;
     wire        inst_rdcntvl;
     wire        inst_rdcntvh;
-//ç®€å•ç®—æœ¯é€»è¾‘è¿ç®—
+//¼òµ¥ËãÊõÂß¼­ÔËËã
     wire        inst_add_w;
     wire        inst_sub_w;
     wire        inst_slti;
@@ -990,7 +987,7 @@ module IDreg(
     wire        inst_sra_w;
     wire        inst_srai_w;
     wire        inst_addi_w;
-//è®¿å­˜æŒ‡ä»¤
+//·Ã´æÖ¸Áî
     wire        inst_ld_b;
     wire        inst_ld_h;
     wire        inst_ld_w;
@@ -999,7 +996,7 @@ module IDreg(
     wire        inst_st_b;
     wire        inst_st_h;
     wire        inst_st_w;
-//è½¬ç§»æŒ‡ä»¤
+//×ªÒÆÖ¸Áî
     wire        inst_jirl;
     wire        inst_b;
     wire        inst_bl;
@@ -1012,7 +1009,7 @@ module IDreg(
 
     wire        inst_lu12i_w;
     wire        inst_pcaddul2i;
-//å¤æ‚ç®—æœ¯é€»è¾‘è¿ç®—
+//¸´ÔÓËãÊõÂß¼­ÔËËã
     wire        inst_mul_w;
     wire        inst_mulh_w;
     wire        inst_mulh_wu;
@@ -1020,7 +1017,7 @@ module IDreg(
     wire        inst_div_wu;
     wire        inst_mod_w;
     wire        inst_mod_wu;
-//ç³»ç»Ÿè°ƒç”¨å¼‚å¸¸æ”¯æŒæŒ‡ä»¤
+//ÏµÍ³µ÷ÓÃÒì³£Ö§³ÖÖ¸Áî
     wire        inst_csrrd;
     wire        inst_csrwr;
     wire        inst_csrxchg;
@@ -1028,12 +1025,12 @@ module IDreg(
     wire        inst_syscall;
     wire        inst_break;
 
-    wire        type_al;        // ç®—æœ¯é€»è¾‘ç±»ï¼Œarithmatic or logic
-    wire        type_ld_st;     // è®¿å­˜ç±»ï¼Œ load or store
-    wire        type_bj;        // åˆ†æ”¯è·³è½¬ç±»ï¼Œbranch or jump
-    wire        type_ex;        // ä¾‹å¤–ç›¸å…³ç±»ï¼Œexception
+    wire        type_al;        // ËãÊõÂß¼­Àà£¬arithmatic or logic
+    wire        type_ld_st;     // ·Ã´æÀà£¬ load or store
+    wire        type_bj;        // ·ÖÖ§Ìø×ªÀà£¬branch or jump
+    wire        type_ex;        // ÀıÍâÏà¹ØÀà£¬exception
     wire        type_tlb;       // tlb-related instructions
-    wire        type_else;      // ä¸çŸ¥é“å•¥ç±»
+    wire        type_else;      // ²»ÖªµÀÉ¶Àà
     
     wire        need_ui5;
     wire        need_ui12;
@@ -1050,8 +1047,8 @@ module IDreg(
     wire        inst_tlbfill;
     wire        inst_invtlb;
     wire [ 4:0] invtlb_op;
-    wire        id_refetch_flag;
-    wire [10:0] ds2es_tlb_zip; // ZIPä¿¡å·
+    wire        refetch;
+    wire [10:0] ds2es_tlb_zip; // ZIPĞÅºÅ
     wire        es_tlb_blk;///////
     wire        es_inst_tlbrd;
     wire [13:0] es_csr_num;
@@ -1260,11 +1257,11 @@ module IDreg(
     assign inst_tlbfill = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk == 5'h0d;
     assign inst_invtlb  = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h13];
 
-    // æŒ‡ä»¤åˆ†ç±»
+    // Ö¸Áî·ÖÀà
     assign type_al    = inst_add_w  | inst_sub_w  | inst_slti   | inst_slt   | inst_sltui  | inst_sltu  |
                         inst_nor    | inst_and    | inst_andi   | inst_or    | inst_ori    | inst_xor   |
                         inst_xori   | inst_sll_w  | inst_slli_w | inst_srl_w | inst_srli_w | inst_sra_w | inst_srai_w | inst_addi_w|
-                        // å¤æ‚ç®—æ•°è¿ç®—
+                        // ¸´ÔÓËãÊıÔËËã
                         inst_mul_w  | inst_mulh_w | inst_mulh_wu| inst_div_w | inst_div_wu | inst_mod_w |
                         inst_mod_wu;
     assign type_ld_st = inst_ld_b   | inst_ld_h   | inst_ld_w   | inst_ld_bu | inst_ld_hu  | inst_st_b  |
@@ -1276,7 +1273,7 @@ module IDreg(
     assign type_tlb   = inst_tlbfill || inst_tlbrd || inst_tlbsrch || inst_tlbwr || inst_invtlb && invtlb_op < 5'h07;
     assign type_else  = inst_rdcntvh| inst_rdcntvl| inst_lu12i_w| inst_pcaddul2i; 
 
-    // aluæ“ä½œç è¯‘ç 
+    // alu²Ù×÷ÂëÒëÂë
     assign ds_alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_hu |
                         inst_ld_h  | inst_ld_bu  | inst_ld_b | inst_st_b  | 
                         inst_st_w  | inst_st_h   | inst_jirl | inst_bl    | 
@@ -1371,7 +1368,7 @@ module IDreg(
     assign ds_rf_we    = gr_we & ds_valid; 
     assign ds_rf_waddr = dest; 
     assign ds_rf_zip   = {ds_csr_re, ds_rf_we, ds_rf_waddr};
-    //å†™å›ã€è®¿å­˜ã€æ‰§è¡Œé˜¶æ®µä¼ å›æ•°æ®å¤„ç†
+    //Ğ´»Ø¡¢·Ã´æ¡¢Ö´ĞĞ½×¶Î´«»ØÊı¾İ´¦Àí
     assign {ws_rf_we, ws_rf_waddr, ws_rf_wdata} = ws_rf_zip;
     assign {ms_res_from_mem, ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata} = ms_rf_zip;
     assign {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata} = es_rf_zip;
@@ -1385,7 +1382,7 @@ module IDreg(
     .waddr  (ws_rf_waddr ),
     .wdata  (ws_rf_wdata )
     );
-    // å†²çªï¼šå†™ä½¿èƒ½ + å†™åœ°å€ä¸ä¸º0å·å¯„å­˜å™¨ + å†™åœ°å€ä¸å½“å‰è¯»å¯„å­˜å™¨åœ°å€ç›¸åŒ
+    // ³åÍ»£ºĞ´Ê¹ÄÜ + Ğ´µØÖ·²»Îª0ºÅ¼Ä´æÆ÷ + Ğ´µØÖ·Óëµ±Ç°¶Á¼Ä´æÆ÷µØÖ·ÏàÍ¬
     assign conflict_r1_wb = (|rf_raddr1) & (rf_raddr1 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r2_wb = (|rf_raddr2) & (rf_raddr2 == ws_rf_waddr) & ws_rf_we;
     assign conflict_r1_mem = (|rf_raddr1) & (rf_raddr1 == ms_rf_waddr) & ms_rf_we;
@@ -1404,7 +1401,7 @@ module IDreg(
    
     assign ds_mem_inst_zip =    {inst_st_b, inst_st_h, inst_st_w, inst_ld_b, 
                                 inst_ld_bu,inst_ld_h, inst_ld_hu, inst_ld_w};
-    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // è¯»å–çš„æ˜¯exeå†…éƒ¨çš„è®¡æ•°å™¨ï¼ŒéçŠ¶æ€å¯„å­˜å™¨TIDä¸­çš„è®¡æ•°
+    assign ds_cnt_inst_zip =    {inst_rdcntvh , inst_rdcntvl}; // ¶ÁÈ¡µÄÊÇexeÄÚ²¿µÄ¼ÆÊıÆ÷£¬·Ç×´Ì¬¼Ä´æÆ÷TIDÖĞµÄ¼ÆÊı
 
 //exception AND tlb relavant
 
@@ -1422,35 +1419,18 @@ module IDreg(
     assign ds_except_zip  = {ds_except_adef, ds_except_ine, // 14+32+32+1+1 
                              ds_except_int , ds_except_brk, ds_except_sys, inst_ertn};    // 1+1+1+1+1
 
-    assign id_refetch_flag = inst_invtlb || inst_tlbrd || inst_tlbwr || inst_tlbfill;  // å½“å‰æŒ‡ä»¤é€ æˆä¸‹ä¸€æ¡æŒ‡ä»¤éœ€è¦Refetch
-                      //|| ds_csr_we && (ds_csr_num == `CSR_ASID || ds_csr_num == `CSR_CRMD || ds_csr_num == `CSR_DMW0 || ds_csr_num == `CSR_DMW1);
-                        // Reserved for exp19
-                        // è™šå®è½¬æ¢éœ€è¦è¯»å–CSR.ASID; CSR.CRMD; ds_csr_num == `CSR_DMWå› æ­¤ä¿®æ”¹åå¿…é¡»Refetchæ¥ç¡®ä¿å–æŒ‡æ­£ç¡®
-    assign ds2es_tlb_zip = {id_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op};
+    assign refetch = inst_invtlb || inst_tlbrd || inst_tlbwr || inst_tlbfill;
+                        
+    assign ds2es_tlb_zip = {refetch, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op};
     assign invtlb_op = ds_inst[4:0];
 
-    //decode block pack
-    assign {es_inst_tlbrd, es_csr_we, es_csr_num} = es_tlb_blk_zip;
-    assign {ms_inst_tlbrd, ms_csr_we, ms_csr_num} = ms_tlb_blk_zip;
+    assign {es_inst_tlbrd, es_csr_we, es_csr_num} = es_tlb_zip;
+    assign {ms_inst_tlbrd, ms_csr_we, ms_csr_num} = ms_tlb_zip;
     assign tlb_blk = ms_tlb_blk || es_tlb_blk;
-    assign es_tlb_blk = type_ld_st && (                                 // æ™®é€šè®¿å­˜ EXP19
-                                        es_inst_tlbrd ||                // tlbrdä¼šæ”¹åŠ¨CSR.ASID
-                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_CRMD || es_csr_num == `CSR_DMW0 || es_csr_num == `CSR_DMW1)) // ä¿®æ”¹CSR.ASIDæˆ–ç›´æ¥æ˜ å°„ç›¸å…³
-    ) || inst_tlbsrch && (                                              // tlbsrchæŒ‡ä»¤, éœ€è¦EXé˜¶æ®µè¯»å…¥CSR.ASID TLBEHI
-                                        es_inst_tlbrd || 
-                                        (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI))
-                    );
-    assign ms_tlb_blk = type_ld_st && (                                 // æ™®é€šè®¿å­˜ EXP19
-                                        ms_inst_tlbrd ||                // tlbrdä¼šæ”¹åŠ¨CSR.ASID
-                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_CRMD || ms_csr_num == `CSR_DMW0 || ms_csr_num == `CSR_DMW1)) // ä¿®æ”¹CSR.ASIDæˆ–ç›´æ¥æ˜ å°„ç›¸å…³
-    ) || inst_tlbsrch && (                                              // tlbsrchæŒ‡ä»¤, éœ€è¦EXé˜¶æ®µè¯»å…¥CSR.ASID TLBEHI
-                                        ms_inst_tlbrd || 
-                                        (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI))
-                    );
+    assign es_tlb_blk = inst_tlbsrch && (es_inst_tlbrd ||(es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI)));
+    assign ms_tlb_blk = inst_tlbsrch && (ms_inst_tlbrd || (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI)));
 
-
-
-//------------------------------ds to es interface--------------------------------------
+//ds to es interface
     assign ds2es_bus = {ds_alu_op,          //19 bit
                         ds_res_from_mem,    //1  bit
                         ds_alu_src1,        //32 bit
@@ -1478,7 +1458,7 @@ module EXEreg(
     input  wire        ms_allowin,
     output wire [`ES2MS_LEN -1:0] es2ms_bus,
     output wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
-    output wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_blk_zip,
+    output wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_zip,
     output wire        es2ms_valid,
     output reg  [31:0] es_pc,    
     // data sram interface
@@ -1554,7 +1534,7 @@ module EXEreg(
     wire        es_mem_req;
 
 // TLB
-    reg  [10:0] ds2es_tlb_zip; // ZIPä¿¡å·
+    reg  [10:0] ds2es_tlb_zip; // ZIPĞÅºÅ
     wire        inst_tlbsrch;
     wire        inst_tlbrd;
     wire        inst_tlbwr;
@@ -1596,7 +1576,7 @@ module EXEreg(
              es_csr_re, es_rf_we, es_rf_waddr, es_rkd_value, es_pc, es_st_op_zip, 
              es_ld_inst_zip, es_cnt_inst_zip, es_csr_zip, es_except_zip_tmp, ds2es_tlb_zip} <= ds2es_bus;    
     end
-    // æŒ‡ä»¤æ‹†åŒ…
+    // Ö¸Áî²ğ°ü
     assign {op_ld_h, op_ld_hu, op_ld_w} = es_ld_inst_zip[2:0];
     assign {op_st_b, op_st_h, op_st_w} = es_st_op_zip;
     assign {rd_cnt_h, rd_cnt_l} = es_cnt_inst_zip;
@@ -1658,24 +1638,23 @@ module EXEreg(
 
 //regfile relevant
 
-    // exeé˜¶æ®µæš‚æ—¶é€‰å‡ºçš„å†™å›æ•°æ®
+    // exe½×¶ÎÔİÊ±Ñ¡³öµÄĞ´»ØÊı¾İ
     assign es_rf_result_tmp = {32{rd_cnt_h}} & es_timer_cnt[63:32] | 
                               {32{rd_cnt_l}} & es_timer_cnt[31: 0] |
                               {32{~rd_cnt_h & ~rd_cnt_l}} & es_alu_result;
-    //æš‚æ—¶è®¤ä¸ºes_rf_wdataç­‰äºes_rf_result_tmp,åªæœ‰åœ¨ldç±»æŒ‡ä»¤éœ€è¦ç‰¹æ®Šå¤„ç†
+    //ÔİÊ±ÈÏÎªes_rf_wdataµÈÓÚes_rf_result_tmp,Ö»ÓĞÔÚldÀàÖ¸ÁîĞèÒªÌØÊâ´¦Àí
     assign es_rf_zip       = {es_csr_re & es_valid, es_res_from_mem & es_valid, es_rf_we & es_valid, es_rf_waddr, es_rf_result_tmp};    
 
 //TLB relevant
 
-
     assign {es_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, inst_invtlb, invtlb_op} = ds2es_tlb_zip;
     assign {s1_vppn, s1_va_bit12} = inst_invtlb ? es_rkd_value[31:12] :
                                     inst_tlbsrch ? {tlbehi_vppn_CSRoutput, 1'b0} :
-                                    es_alu_result[31:12]; // Normal Load/Store translation, RESERVED for exp19
-    assign s1_asid       = inst_invtlb ?  es_alu_src1[9:0] : asid_CSRoutput; // alu src1 is rj value
+                                    es_alu_result[31:12]; 
+    assign s1_asid       = inst_invtlb ?  es_alu_src1[9:0] : asid_CSRoutput; //src1 is rj
     assign es2ms_tlb_zip = {es_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, s1_found, s1_index};
     assign {es_csr_num, es_csr_wmask, es_csr_wvalue, es_csr_we} = es_csr_zip;
-    assign es_tlb_blk_zip = {inst_tlbrd & es_valid, es_csr_we & es_valid, es_csr_num};
+    assign es_tlb_zip = {inst_tlbrd & es_valid, es_csr_we & es_valid, es_csr_num};
 endmodule
 
 module MEMreg(
@@ -1685,7 +1664,7 @@ module MEMreg(
     output wire        ms_allowin,
     input  wire [`ES2MS_LEN -1:0] es2ms_bus,
     input  wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_rf_wdata}
-    output wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_blk_zip,
+    output wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_zip,
     input  wire        es2ms_valid, // {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w}
     // mem and wb state interface
     input  wire        ws_allowin,
@@ -1724,10 +1703,10 @@ module MEMreg(
     wire        ms_wait_data_ok;
     reg         ms_wait_data_ok_r;
     reg  [31:0] ms_data_buf;
-    reg         data_buf_valid;  // åˆ¤æ–­æŒ‡ä»¤ç¼“å­˜æ˜¯å¦æœ‰æ•ˆ
+    reg         data_buf_valid;  // ÅĞ¶ÏÖ¸Áî»º´æÊÇ·ñÓĞĞ§
 
 // TLB
-    reg  [ 9:0] es2ms_tlb_zip; // ZIPä¿¡å·
+    reg  [ 9:0] es2ms_tlb_zip; // ZIPĞÅºÅ
     wire        inst_tlbsrch;
     wire        inst_tlbrd;
     wire        inst_tlbwr;
@@ -1760,13 +1739,13 @@ module MEMreg(
     
 //data buffer
 
-    // è®¾ç½®å¯„å­˜å™¨ï¼Œæš‚å­˜æ•°æ®ï¼Œå¹¶ç”¨validä¿¡å·è¡¨ç¤ºå…¶å†…æ•°æ®æ˜¯å¦æœ‰æ•ˆ
+    // ÉèÖÃ¼Ä´æÆ÷£¬Ôİ´æÊı¾İ£¬²¢ÓÃvalidĞÅºÅ±íÊ¾ÆäÄÚÊı¾İÊÇ·ñÓĞĞ§
     always @(posedge clk) begin
         if(~resetn) begin
             ms_data_buf <= 32'b0;
             data_buf_valid <= 1'b0;
         end
-        else if(ms2ws_valid & ws_allowin)   // ç¼“å­˜å·²ç»æµå‘ä¸‹ä¸€æµæ°´çº§
+        else if(ms2ws_valid & ws_allowin)   // »º´æÒÑ¾­Á÷ÏòÏÂÒ»Á÷Ë®¼¶
             data_buf_valid <= 1'b0;
         else if(~data_buf_valid & data_sram_data_ok & ms_valid) begin
             ms_data_buf <= data_sram_rdata;
@@ -1790,7 +1769,7 @@ module MEMreg(
 
 //mem and wb state interface
 
-    // ç»†ç²’åº¦è¯‘ç 
+    // Ï¸Á£¶ÈÒëÂë
     assign {op_ld_b, op_ld_bu,op_ld_h, op_ld_hu, op_ld_w} = ms_ld_inst_zip;
     assign shift_rdata   = {24'b0, {32{data_buf_valid}} & ms_data_buf | {32{~data_buf_valid}} & data_sram_rdata} >> {ms_rf_result_tmp[1:0], 3'b0};
     assign ms_mem_result[ 7: 0]   =  shift_rdata[ 7: 0];
@@ -1818,7 +1797,7 @@ module MEMreg(
     assign {ms_refetch_flag, inst_tlbsrch, inst_tlbrd, inst_tlbwr, inst_tlbfill, tlbsrch_found, tlbsrch_idxgot} = es2ms_tlb_zip;
     assign ms2wb_tlb_zip = es2ms_tlb_zip;
     assign {ms_csr_num, ms_csr_wmask, ms_csr_wvalue, ms_csr_we} = ms_csr_zip;
-    assign ms_tlb_blk_zip = {inst_tlbrd & ms_valid, ms_csr_we & ms_valid, ms_csr_num};
+    assign ms_tlb_zip = {inst_tlbrd & ms_valid, ms_csr_we & ms_valid, ms_csr_num};
 endmodule
 
 module WBreg(
@@ -1853,7 +1832,7 @@ module WBreg(
     // TLB
     output wire         inst_wb_tlbfill,
     output wire         inst_wb_tlbsrch,
-    output wire         tlbwe,
+    output wire         tlb_we,
     output wire         inst_wb_tlbrd,
     output wire         wb_tlbsrch_found,
     output wire [`TLBNUM_IDX-1:0] wb_tlbsrch_idxgot,
@@ -1879,7 +1858,7 @@ module WBreg(
     reg  [78:0] ws_csr_zip;
 
 // TLB
-    reg  [ 9:0] ms2wb_tlb_zip; // ZIPä¿¡å·
+    reg  [ 9:0] ms2wb_tlb_zip; // ZIPĞÅºÅ
     // wire        inst_tlbsrch;
     // wire        inst_tlbrd;
     wire        inst_wb_tlbwr;
@@ -1911,13 +1890,13 @@ module WBreg(
             {csr_re, ws_rf_we_tmp, ws_rf_waddr, ws_rf_wdata_tmp} <= ms_rf_zip;
         end
     end
-//-----------------------------wb and csr state interface---------------------------------------
+//wb and csr state interface
     assign {csr_num, csr_wmask, csr_wvalue,  csr_we} = ws_csr_zip & {79{ws_valid}};
     assign {ws_except_ale, ws_except_adef, ws_except_ine, ws_except_int, ws_except_brk, 
             ws_except_sys, ws_ertn} = ws_except_zip;    // ertn_flush=inst_ertn
     assign ertn_flush = ws_ertn & ws_valid;
-    assign wb_ex = (ws_except_adef |                   // ç”¨é”™è¯¯åœ°å€å–æŒ‡å·²ç»å‘ç”Ÿï¼Œæ•…ä¸ä¸ws_validæŒ‚é’©
-                    ws_except_int  |                    // ä¸­æ–­ç”±çŠ¶æ€å¯„å­˜å™¨ä¸­çš„è®¡æ—¶å™¨äº§ç”Ÿï¼Œä¸ä¸ws_validæŒ‚é’©
+    assign wb_ex = (ws_except_adef |                   // ÓÃ´íÎóµØÖ·È¡Ö¸ÒÑ¾­·¢Éú£¬¹Ê²»Óëws_valid¹Ò¹³
+                    ws_except_int  |                    // ÖĞ¶ÏÓÉ×´Ì¬¼Ä´æÆ÷ÖĞµÄ¼ÆÊ±Æ÷²úÉú£¬²»Óëws_valid¹Ò¹³
                     ws_except_ale | ws_except_ine | ws_except_brk | ws_except_sys) & ws_valid;
     assign wb_ecode =  ws_except_int ? `ECODE_INT:
                        ws_except_adef? `ECODE_ADE:
@@ -1925,7 +1904,7 @@ module WBreg(
                        ws_except_sys? `ECODE_SYS:
                        ws_except_brk? `ECODE_BRK:
                        ws_except_ine? `ECODE_INE:
-                        6'b0;   // æœªåŒ…å«ADEMå’ŒTLBR
+                        6'b0;   // Î´°üº¬ADEMºÍTLBR
     assign wb_esubcode = 9'b0;
 
 //id and ws state interface
@@ -1944,31 +1923,31 @@ module WBreg(
 //tlb interface
 
     assign {wb_refetch_flag, inst_wb_tlbsrch, inst_wb_tlbrd, inst_wb_tlbwr, inst_wb_tlbfill, wb_tlbsrch_found, wb_tlbsrch_idxgot} = ms2wb_tlb_zip;
-    assign tlbwe = (inst_wb_tlbwr || inst_wb_tlbfill) && ws_valid;
+    assign tlb_we = (inst_wb_tlbwr || inst_wb_tlbfill) && ws_valid;
     assign wb_refetch_flush = wb_refetch_flag && ws_valid;
 endmodule
 
 module csr(
     input  wire          clk       ,
     input  wire          reset     ,
-    // è¯»ç«¯å£
+    // ¶Á¶Ë¿Ú
     input  wire          csr_re    ,
     input  wire [13:0]   csr_num   ,
     output wire [31:0]   csr_rvalue,
-    // å†™ç«¯å£
+    // Ğ´¶Ë¿Ú
     input  wire          csr_we    ,
     input  wire [31:0]   csr_wmask ,
     input  wire [31:0]   csr_wvalue,
-    // ä¸ç¡¬ä»¶ç”µè·¯äº¤äº’çš„æ¥å£ä¿¡å·
-    output wire [31:0]   ex_entry  , //é€å¾€pre-IFçš„å¼‚å¸¸å…¥å£åœ°å€
-    output wire [31:0]   ertn_entry, //é€å¾€pre-IFçš„è¿”å›å…¥å£åœ°å€
-    output wire          has_int   , //é€å¾€IDé˜¶æ®µçš„ä¸­æ–­æœ‰æ•ˆä¿¡å·
-    input  wire          ertn_flush, //æ¥è‡ªWBé˜¶æ®µçš„ertnæŒ‡ä»¤æ‰§è¡Œæœ‰æ•ˆä¿¡å·
-    input  wire          wb_ex     , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸å¤„ç†è§¦å‘ä¿¡å·
-    input  wire [ 5:0]   wb_ecode  , //æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹
-    input  wire [ 8:0]   wb_esubcode,//æ¥è‡ªWBé˜¶æ®µçš„å¼‚å¸¸ç±»å‹è¾…åŠ©ç 
-    input  wire [31:0]   wb_vaddr   ,//æ¥è‡ªWBé˜¶æ®µçš„è®¿å­˜åœ°å€
-    input  wire [31:0]   wb_pc,      //å†™å›çš„è¿”å›åœ°å€
+    // ÓëÓ²¼şµçÂ·½»»¥µÄ½Ó¿ÚĞÅºÅ
+    output wire [31:0]   ex_entry  , //ËÍÍùpre-IFµÄÒì³£Èë¿ÚµØÖ·
+    output wire [31:0]   ertn_entry, //ËÍÍùpre-IFµÄ·µ»ØÈë¿ÚµØÖ·
+    output wire          has_int   , //ËÍÍùID½×¶ÎµÄÖĞ¶ÏÓĞĞ§ĞÅºÅ
+    input  wire          ertn_flush, //À´×ÔWB½×¶ÎµÄertnÖ¸ÁîÖ´ĞĞÓĞĞ§ĞÅºÅ
+    input  wire          wb_ex     , //À´×ÔWB½×¶ÎµÄÒì³£´¦Àí´¥·¢ĞÅºÅ
+    input  wire [ 5:0]   wb_ecode  , //À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ
+    input  wire [ 8:0]   wb_esubcode,//À´×ÔWB½×¶ÎµÄÒì³£ÀàĞÍ¸¨ÖúÂë
+    input  wire [31:0]   wb_vaddr   ,//À´×ÔWB½×¶ÎµÄ·Ã´æµØÖ·
+    input  wire [31:0]   wb_pc,      //Ğ´»ØµÄ·µ»ØµØÖ·
 // --- TLB ---
 
     //tlbsrch
@@ -1976,13 +1955,13 @@ module csr(
     input  wire          tlbsrch_found,
     input  wire [`TLBNUM_IDX-1:0] tlbsrch_idxgot,
     output wire [`TLBNUM_IDX-1:0] tlbindex_index_CSRoutput,
-        // å¸¦æœ‰CSRoutputæ ¼å¼çš„å‘½åï¼Œæ˜¯ä¸ºäº†ä¾¿äºåœ¨CPU Coreä¸­ç»Ÿä¸€ã€‚ 
+        // ´øÓĞCSRoutput¸ñÊ½µÄÃüÃû£¬ÊÇÎªÁË±ãÓÚÔÚCPU CoreÖĞÍ³Ò»¡£ 
     
     //tlbrd
-    //è¦æ³¨æ„tlbsrchå’Œtlbrdä½¿ç”¨çš„å¹¶éåŒä¸€å¥—ç«¯å£
+    //Òª×¢ÒâtlbsrchºÍtlbrdÊ¹ÓÃµÄ²¢·ÇÍ¬Ò»Ì×¶Ë¿Ú
     input  wire         inst_wb_tlbrd,
 
-    input  wire         tlbread_e, // æ˜¯æœ‰æ•ˆTLBé¡¹
+    input  wire         tlbread_e, // ÊÇÓĞĞ§TLBÏî
     input  wire  [ 5:0] tlbread_ps,
     input  wire  [18:0] tlbread_vppn,
     input  wire  [ 9:0] tlbread_asid,
@@ -2001,7 +1980,7 @@ module csr(
     input  wire         tlbread_v1,
 
     // tlbwr & refill
-    // input  wire        inst_wb_tlbwr,   //è¿™ä¸ªä¿¡å·æ²¡ç”¨,tlbrefillåŒç†
+    // input  wire        inst_wb_tlbwr,   //Õâ¸öĞÅºÅÃ»ÓÃ,tlbrefillÍ¬Àí
     output wire        tlbwr_e,
     output wire [ 5:0] tlbwr_ps,
     output wire [18:0] tlbehi_vppn_CSRoutput,
@@ -2022,61 +2001,61 @@ module csr(
 );
     wire [ 7: 0] hw_int_in;
     wire         ipi_int_in;
-    // å½“å‰æ¨¡å¼ä¿¡æ¯
+    // µ±Ç°Ä£Ê½ĞÅÏ¢
     wire [31: 0] csr_crmd_data;
-    reg  [ 1: 0] csr_crmd_plv;      //CRMDçš„PLVåŸŸï¼Œå½“å‰ç‰¹æƒç­‰çº§
-    reg          csr_crmd_ie;       //CRMDçš„å…¨å±€ä¸­æ–­ä½¿èƒ½ä¿¡å·
-    reg          csr_crmd_da;       //CRMDçš„ç›´æ¥åœ°å€ç¿»è¯‘ä½¿èƒ½
+    reg  [ 1: 0] csr_crmd_plv;      //CRMDµÄPLVÓò£¬µ±Ç°ÌØÈ¨µÈ¼¶
+    reg          csr_crmd_ie;       //CRMDµÄÈ«¾ÖÖĞ¶ÏÊ¹ÄÜĞÅºÅ
+    reg          csr_crmd_da;       //CRMDµÄÖ±½ÓµØÖ··­ÒëÊ¹ÄÜ
     reg          csr_crmd_pg;
     reg  [ 6: 5] csr_crmd_datf;
     reg  [ 8: 7] csr_crmd_datm;
     // reg  [31: 9] csr_crmd_r0;
 
-    // ä¾‹å¤–å‰æ¨¡å¼ä¿¡æ¯
+    // ÀıÍâÇ°Ä£Ê½ĞÅÏ¢
     wire [31: 0] csr_prmd_data;
-    reg  [ 1: 0] csr_prmd_pplv;     //CRMDçš„PLVåŸŸæ—§å€¼
-    reg          csr_prmd_pie;      //CRMDçš„IEåŸŸæ—§å€¼
+    reg  [ 1: 0] csr_prmd_pplv;     //CRMDµÄPLVÓò¾ÉÖµ
+    reg          csr_prmd_pie;      //CRMDµÄIEÓò¾ÉÖµ
 
-    // ä¾‹å¤–æ§åˆ¶
-    wire [31: 0] csr_ecfg_data;     // ä¿ç•™ä½31:13
-    reg  [12: 0] csr_ecfg_lie;      //å±€éƒ¨ä¸­æ–­ä½¿èƒ½ä½
+    // ÀıÍâ¿ØÖÆ
+    wire [31: 0] csr_ecfg_data;     // ±£ÁôÎ»31:13
+    reg  [12: 0] csr_ecfg_lie;      //¾Ö²¿ÖĞ¶ÏÊ¹ÄÜÎ»
 
-    // ä¾‹å¤–çŠ¶æ€
-    wire [31: 0] csr_estat_data;    // ä¿ç•™ä½15:13, 31
-    reg  [12: 0] csr_estat_is;      // ä¾‹å¤–ä¸­æ–­çš„çŠ¶æ€ä½ï¼ˆ8ä¸ªç¡¬ä»¶ä¸­æ–­+1ä¸ªå®šæ—¶å™¨ä¸­æ–­+1ä¸ªæ ¸é—´ä¸­æ–­+2ä¸ªè½¯ä»¶ä¸­æ–­ï¼‰
-    reg  [ 5: 0] csr_estat_ecode;   // ä¾‹å¤–ç±»å‹ä¸€çº§ç¼–ç 
-    reg  [ 8: 0] csr_estat_esubcode;// ä¾‹å¤–ç±»å‹äºŒçº§ç¼–ç 
+    // ÀıÍâ×´Ì¬
+    wire [31: 0] csr_estat_data;    // ±£ÁôÎ»15:13, 31
+    reg  [12: 0] csr_estat_is;      // ÀıÍâÖĞ¶ÏµÄ×´Ì¬Î»£¨8¸öÓ²¼şÖĞ¶Ï+1¸ö¶¨Ê±Æ÷ÖĞ¶Ï+1¸öºË¼äÖĞ¶Ï+2¸öÈí¼şÖĞ¶Ï£©
+    reg  [ 5: 0] csr_estat_ecode;   // ÀıÍâÀàĞÍÒ»¼¶±àÂë
+    reg  [ 8: 0] csr_estat_esubcode;// ÀıÍâÀàĞÍ¶ş¼¶±àÂë
 
-    // ä¾‹å¤–è¿”å›åœ°å€ERA
+    // ÀıÍâ·µ»ØµØÖ·ERA
     reg  [31: 0] csr_era_data;  // data
 
-    // ä¾‹å¤–å…¥å£åœ°å€eentry
-    wire [31: 0] csr_eentry_data;   // ä¿ç•™ä½5:0
-    reg  [25: 0] csr_eentry_va;     // ä¾‹å¤–ä¸­æ–­å…¥å£é«˜ä½åœ°å€
-    // æ•°æ®ä¿å­˜
+    // ÀıÍâÈë¿ÚµØÖ·eentry
+    wire [31: 0] csr_eentry_data;   // ±£ÁôÎ»5:0
+    reg  [25: 0] csr_eentry_va;     // ÀıÍâÖĞ¶ÏÈë¿Ú¸ßÎ»µØÖ·
+    // Êı¾İ±£´æ
     reg  [31: 0] csr_save0_data;
     reg  [31: 0] csr_save1_data;
     reg  [31: 0] csr_save2_data;
     reg  [31: 0] csr_save3_data;
-    // å‡ºé”™è™šåœ°å€
+    // ³ö´íĞéµØÖ·
     wire         wb_ex_addr_err;
     reg  [31: 0] csr_badv_vaddr;
     wire [31: 0] csr_badv_data;
-    // å®šæ—¶å™¨ç¼–å· 
+    // ¶¨Ê±Æ÷±àºÅ 
     wire [31: 0] csr_tid_data;
     reg  [31: 0] csr_tid_tid;
 
-    // å®šæ—¶å™¨é…ç½®
+    // ¶¨Ê±Æ÷ÅäÖÃ
     wire [31: 0] csr_tcfg_data;
     reg          csr_tcfg_en;
     reg          csr_tcfg_periodic;
     reg  [29: 0] csr_tcfg_initval;
     wire [31: 0] tcfg_next_value;
 
-    // å®šæ—¶å™¨æ•°å€¼
+    // ¶¨Ê±Æ÷ÊıÖµ
     wire [31: 0] csr_tval_data;
     reg  [31: 0] timer_cnt;
-    // å®šæ—¶ä¸­æ–­æ¸…é™¤
+    // ¶¨Ê±ÖĞ¶ÏÇå³ı
     wire [31: 0] csr_ticlr_data;
 
     // TLB
@@ -2109,7 +2088,7 @@ module csr(
     assign has_int = (|(csr_estat_is[11:0] & csr_ecfg_lie[11:0])) & csr_crmd_ie;
     assign ex_entry = csr_eentry_data;
     assign ertn_entry = csr_era_data;
-    // CRMDçš„PLVã€IEåŸŸ
+    // CRMDµÄPLV¡¢IEÓò
     always @(posedge clk) begin
         if (reset) begin
             csr_crmd_plv <= 2'b0;
@@ -2131,7 +2110,7 @@ module csr(
         end
     end
 
-    // CRMDçš„DAã€PGã€DATFã€DATMåŸŸ
+    // CRMDµÄDA¡¢PG¡¢DATF¡¢DATMÓò
     always @(posedge clk) begin
         if(reset) begin
             csr_crmd_da   <= 1'b1;
@@ -2151,7 +2130,7 @@ module csr(
         end
     end
 
-    // PRMDçš„PPLVã€PIEåŸŸ
+    // PRMDµÄPPLV¡¢PIEÓò
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_prmd_pplv <= csr_crmd_plv;
@@ -2165,7 +2144,7 @@ module csr(
         end
     end
 
-    // ECFGçš„LIEåŸŸ
+    // ECFGµÄLIEÓò
     always @(posedge clk) begin
         if(reset)
             csr_ecfg_lie <= 13'b0;
@@ -2173,7 +2152,7 @@ module csr(
             csr_ecfg_lie <= csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_wvalue[`CSR_ECFG_LIE]
                         |  ~csr_wmask[`CSR_ECFG_LIE] & 13'h1bff & csr_ecfg_lie;
     end
-    // ESTATçš„ISåŸŸ
+    // ESTATµÄISÓò
     assign hw_int_in = 8'b0;
     assign ipi_int_in= 1'b0;
     always @(posedge clk) begin
@@ -2185,7 +2164,7 @@ module csr(
                                | (~csr_wmask[`CSR_ESTAT_IS10] & csr_estat_is[1:0]          );
         end
 
-        csr_estat_is[9:2] <= hw_int_in[7:0]; //ç¡¬ä¸­æ–­
+        csr_estat_is[9:2] <= hw_int_in[7:0]; //Ó²ÖĞ¶Ï
         csr_estat_is[10] <= 1'b0; 
 
         if (timer_cnt[31:0] == 32'b0) begin
@@ -2194,16 +2173,16 @@ module csr(
         else if (csr_we && csr_num == `CSR_TICLR && csr_wmask[`CSR_TICLR_CLR] 
                 && csr_wvalue[`CSR_TICLR_CLR]) 
             csr_estat_is[11] <= 1'b0;
-        csr_estat_is[12] <= ipi_int_in;     // æ ¸é—´ä¸­æ–­
+        csr_estat_is[12] <= ipi_int_in;     // ºË¼äÖĞ¶Ï
     end    
-    // ESTATçš„Ecodeå’ŒEsubCodeåŸŸ
+    // ESTATµÄEcodeºÍEsubCodeÓò
     always @(posedge clk) begin
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
         end
     end
-    // ERAçš„PCåŸŸ
+    // ERAµÄPCÓò
     always @(posedge clk) begin
         if(wb_ex)
             csr_era_data <= wb_pc;
@@ -2233,7 +2212,7 @@ module csr(
             csr_save3_data <=  csr_wmask[`CSR_SAVE_DATA] & csr_wvalue[`CSR_SAVE_DATA]
                             | ~csr_wmask[`CSR_SAVE_DATA] & csr_save3_data;
     end
-    // BADVçš„VAddråŸŸ
+    // BADVµÄVAddrÓò
     assign wb_ex_addr_err = wb_ecode==`ECODE_ALE || wb_ecode==`ECODE_ADE; 
     always @(posedge clk) begin
         if (wb_ex && wb_ex_addr_err) begin
@@ -2251,7 +2230,7 @@ module csr(
         end
     end
 
-    // TCFGçš„ENã€Periodicã€InitValåŸŸ
+    // TCFGµÄEN¡¢Periodic¡¢InitValÓò
     always @(posedge clk) begin
         if (reset) 
             csr_tcfg_en <= 1'b0;
@@ -2287,7 +2266,7 @@ module csr(
         end
     end
 
-    // TICLRçš„CLRåŸŸ
+    // TICLRµÄCLRÓò
     assign csr_ticlr_clr = 1'b0;
 
     assign csr_crmd_data  = {23'b0, csr_crmd_datm, csr_crmd_datf, csr_crmd_pg, 
@@ -2327,7 +2306,7 @@ module csr(
     //TLB
     //TLBIDX
     assign tlbindex_index_CSRoutput = tlbindex_index;
-    assign tlbidx_data = {tlbindex_ne, 1'b0, tlbindex_ps, 8'h0, 12'h0, tlbindex_index};// å‡å®šTLBNUM=16,åç»­éœ€è¦ä¿®æ”¹ï¼
+    assign tlbidx_data = {tlbindex_ne, 1'b0, tlbindex_ps, 8'h0, 12'h0, tlbindex_index};// ¼Ù¶¨TLBNUM=16,ºóĞøĞèÒªĞŞ¸Ä£¡
     always @(posedge clk) begin
         if (reset) begin
             tlbindex_index <= 4'b0;
@@ -2344,7 +2323,7 @@ module csr(
         end
         else if (inst_wb_tlbsrch) begin
             tlbindex_ne <= ~tlbsrch_found;
-            tlbindex_index <= tlbsrch_found ? tlbsrch_idxgot : tlbindex_index; // é¿å…å¤šå±‚åµŒå¥—
+            tlbindex_index <= tlbsrch_found ? tlbsrch_idxgot : tlbindex_index; // ±ÜÃâ¶à²ãÇ¶Ì×
         end
         else if (inst_wb_tlbrd) begin
             tlbindex_ps <= {6{tlbread_e}} & tlbread_ps;
@@ -2374,7 +2353,7 @@ module csr(
 
     assign tlbwr_g = tlbelo0_g && tlbelo1_g;
     // TLBELO0
-    assign tlbelo0_data = {4'h0, tlbelo0_ppn, 1'b0, tlbelo0_g, tlbelo0_mat, tlbelo0_plv, tlbelo0_d, tlbelo0_v};// å‡å®šPALEN=32,åç»­éœ€è¦ä¿®æ”¹ï¼
+    assign tlbelo0_data = {4'h0, tlbelo0_ppn, 1'b0, tlbelo0_g, tlbelo0_mat, tlbelo0_plv, tlbelo0_d, tlbelo0_v};// ¼Ù¶¨PALEN=32,ºóĞøĞèÒªĞŞ¸Ä£¡
     always @(posedge clk) begin
         if (reset) begin
             tlbelo0_v <= 1'b0;
@@ -2424,7 +2403,7 @@ module csr(
     assign tlbwr_v0   = tlbelo0_v;
 
     // TLBELO1
-    assign tlbelo1_data = {4'h0, tlbelo1_ppn, 1'b0, tlbelo1_g, tlbelo1_mat, tlbelo1_plv, tlbelo1_d, tlbelo1_v};// å‡å®šPALEN=32,åç»­éœ€è¦ä¿®æ”¹ï¼
+    assign tlbelo1_data = {4'h0, tlbelo1_ppn, 1'b0, tlbelo1_g, tlbelo1_mat, tlbelo1_plv, tlbelo1_d, tlbelo1_v};// ¼Ù¶¨PALEN=32,ºóĞøĞèÒªĞŞ¸Ä£¡
     always @(posedge clk) begin
         if (reset) begin
             tlbelo1_v <= 1'b0;
@@ -2502,8 +2481,8 @@ module csr(
     end
 endmodule
 
-// 32ä½Boothä¸¤ä½ä¹˜éœ€è¦ç”Ÿæˆ16ä¸ªéƒ¨åˆ†ç§¯
-// 32ä½æ— ç¬¦å·æ•°ä¹˜æ³•â†’34ä½æœ‰ç¬¦å·æ•°ä¹˜æ³•ï¼Œéœ€17ä¸ªéƒ¨åˆ†ç§¯
+// 32Î»BoothÁ½Î»³ËĞèÒªÉú³É16¸ö²¿·Ö»ı
+// 32Î»ÎŞ·ûºÅÊı³Ë·¨¡ú34Î»ÓĞ·ûºÅÊı³Ë·¨£¬Ğè17¸ö²¿·Ö»ı
 module Adder (
     input   [63:0] in1,
     input   [63:0] in2,
@@ -2540,11 +2519,11 @@ module Wallace_Mul (
     wire [16:0] sel_neg_2x_val;
     wire [16:0] sel_0_val;
     wire [18:0] debug;
-    // æ‰©å±•æˆ34ä½ä»¥å…¼å®¹æ— ç¬¦å·æ•°ä¹˜æ³•ï¼ˆå¶æ•°ä½æ˜“äºå¤„ç†ï¼‰
+    // À©Õ¹³É34Î»ÒÔ¼æÈİÎŞ·ûºÅÊı³Ë·¨£¨Å¼ÊıÎ»Ò×ÓÚ´¦Àí£©
     wire [33:0] B_r;
     wire [33:0] B_m;
     wire [33:0] B_l;
-    wire [63:0] P [16:0];   // æœªå¯¹é½çš„éƒ¨åˆ†ç§¯
+    wire [63:0] P [16:0];   // Î´¶ÔÆëµÄ²¿·Ö»ı
 
     always @(posedge mul_clk) begin
         if(~resetn)
@@ -2566,7 +2545,7 @@ module Wallace_Mul (
     assign sel_2x      = (~B_l & B_m & B_r);                         // 011
     assign sel_0       = (B_l & B_m & B_r) | (~B_l & ~B_m & ~B_r);     // 000, 111
 
-    // å¥‡æ•°ä½æ‰æ˜¯æœ‰æ•ˆçš„é€‰å–ä¿¡å·
+    // ÆæÊıÎ»²ÅÊÇÓĞĞ§µÄÑ¡È¡ĞÅºÅ
     assign sel_x_val    = { sel_x[32], sel_x[30], sel_x[28], sel_x[26], sel_x[24],
                             sel_x[22], sel_x[20], sel_x[18], sel_x[16],
                             sel_x[14], sel_x[12], sel_x[10], sel_x[ 8],
@@ -2587,9 +2566,9 @@ module Wallace_Mul (
                             sel_0[22], sel_0[20], sel_0[18], sel_0[16],
                             sel_0[14], sel_0[12], sel_0[10], sel_0[ 8],
                             sel_0[ 6], sel_0[ 4], sel_0[ 2], sel_0[ 0]}; 
-    // debugä¿¡å·åº”ä¸º0FFFF                                                                                              
+    // debugĞÅºÅÓ¦Îª0FFFF                                                                                              
     assign debug        = sel_x_val + sel_neg_2x_val + sel_neg_x_val + sel_2x_val + sel_0_val;
-    // åå…­ä¸ªæœªå¯¹é½çš„éƒ¨åˆ†ç§¯
+    // Ê®Áù¸öÎ´¶ÔÆëµÄ²¿·Ö»ı
     assign {P[16], P[15], P[14], P[13], P[12],
             P[11], P[10], P[ 9], P[ 8],
             P[ 7], P[ 6], P[ 5], P[ 4],
@@ -2703,7 +2682,7 @@ module Wallace_Mul (
     );
     assign level_3[4] = level_2[6];
     assign level_3[5] = level_2[7];
-//æµæ°´çº§åˆ‡åˆ†
+//Á÷Ë®¼¶ÇĞ·Ö
     
 //Level 4
 
@@ -2746,7 +2725,7 @@ module Wallace_Mul (
         .S(level_6[1])
     );
 
-//æµæ°´çº§åˆ‡åˆ†
+//Á÷Ë®¼¶ÇĞ·Ö
 
     reg  [63:0] level_6_r [1:0];
     always @(posedge mul_clk) begin
@@ -2763,11 +2742,11 @@ module Div(
     input  wire    resetn,
     input  wire    div,
     input  wire    div_signed,
-    input  wire [31:0] x,   //è¢«é™¤æ•°
-    input  wire [31:0] y,   //é™¤æ•°
-    output wire [31:0] s,   //å•†
-    output wire [31:0] r,   //ä½™æ•°
-    output wire    complete //é™¤æ³•å®Œæˆä¿¡å·
+    input  wire [31:0] x,   //±»³ıÊı
+    input  wire [31:0] y,   //³ıÊı
+    output wire [31:0] s,   //ÉÌ
+    output wire [31:0] r,   //ÓàÊı
+    output wire    complete //³ı·¨Íê³ÉĞÅºÅ
 );
 
     wire        sign_s;
@@ -2779,17 +2758,17 @@ module Div(
     reg  [63:0] x_pad;
     reg  [32:0] y_pad;
     reg  [31:0] s_r;
-    reg  [32:0] r_r;    // å½“å‰çš„ä½™æ•°
+    reg  [32:0] r_r;    // µ±Ç°µÄÓàÊı
     reg  [ 5:0] counter;
 
-// 1.ç¡®å®šç¬¦å·ä½
+// 1.È·¶¨·ûºÅÎ»
     assign sign_s = (x[31]^y[31]) & div_signed;
     assign sign_r = x[31] & div_signed;
     assign abs_x  = (div_signed & x[31]) ? (~x+1'b1): x;
     assign abs_y  = (div_signed & y[31]) ? (~y+1'b1): y;
-// 2.å¾ªç¯è¿­ä»£å¾—åˆ°å•†å’Œä½™æ•°ç»å¯¹å€¼
+// 2.Ñ­»·µü´úµÃµ½ÉÌºÍÓàÊı¾ø¶ÔÖµ
     assign complete = counter == 6'd33;
-    //åˆå§‹åŒ–è®¡æ•°å™¨
+    //³õÊ¼»¯¼ÆÊıÆ÷
     always @(posedge div_clk) begin
         if(~resetn) begin
             counter <= 6'b0;
@@ -2801,7 +2780,7 @@ module Div(
                 counter <= counter + 1'b1;
         end
     end
-    //å‡†å¤‡æ“ä½œæ•°,counter=0
+    //×¼±¸²Ù×÷Êı,counter=0
     always @(posedge div_clk) begin
         if(~resetn)
             {x_pad, y_pad} <= {64'b0, 33'b0};
@@ -2811,9 +2790,9 @@ module Div(
         end
     end
 
-    //æ±‚è§£å½“å‰è¿­ä»£çš„å‡æ³•ç»“æœ
-    assign pre_r = r_r - y_pad;                     //æœªæ¢å¤ä½™æ•°çš„ç»“æœ
-    assign recover_r = pre_r[32] ? r_r : pre_r;     //æ¢å¤ä½™æ•°çš„ç»“æœ
+    //Çó½âµ±Ç°µü´úµÄ¼õ·¨½á¹û
+    assign pre_r = r_r - y_pad;                     //Î´»Ö¸´ÓàÊıµÄ½á¹û
+    assign recover_r = pre_r[32] ? r_r : pre_r;     //»Ö¸´ÓàÊıµÄ½á¹û
     always @(posedge div_clk) begin
         if(~resetn) 
             s_r <= 32'b0;
@@ -2825,13 +2804,13 @@ module Div(
         if(~resetn)
             r_r <= 33'b0;
         if(div & ~complete) begin
-            if(~|counter)   //ä½™æ•°åˆå§‹åŒ–
+            if(~|counter)   //ÓàÊı³õÊ¼»¯
                 r_r <= {32'b0, abs_x[31]};
             else
                 r_r <=  (counter == 32) ? recover_r : {recover_r, x_pad[31 - counter]};
         end
     end
-// 3.è°ƒæ•´æœ€ç»ˆå•†å’Œä½™æ•°
+// 3.µ÷Õû×îÖÕÉÌºÍÓàÊı
     assign s = div_signed & sign_s ? (~s_r+1'b1) : s_r;
     assign r = div_signed & sign_r ? (~r_r+1'b1) : r_r;
 endmodule
@@ -2901,41 +2880,41 @@ module bridge_sram_axi(
     output              data_sram_data_ok,
     output  [31:0]      data_sram_rdata
 );
-	// çŠ¶æ€æœºçŠ¶æ€å¯„å­˜å™¨
-	reg [4:0] ar_current_state;	// è¯»è¯·æ±‚çŠ¶æ€æœº
+	// ×´Ì¬»ú×´Ì¬¼Ä´æÆ÷
+	reg [4:0] ar_current_state;	// ¶ÁÇëÇó×´Ì¬»ú
 	reg [4:0] ar_next_state;
-	reg [4:0] r_current_state;	// è¯»æ•°æ®çŠ¶æ€æœº
+	reg [4:0] r_current_state;	// ¶ÁÊı¾İ×´Ì¬»ú
 	reg [4:0] r_next_state;
-	reg [4:0] w_current_state;	// å†™è¯·æ±‚å’Œå†™æ•°æ®çŠ¶æ€æœº
+	reg [4:0] w_current_state;	// Ğ´ÇëÇóºÍĞ´Êı¾İ×´Ì¬»ú
 	reg [4:0] w_next_state;
-	reg [4:0] b_current_state;	// å†™ç›¸åº”çŠ¶æ€æœº
+	reg [4:0] b_current_state;	// Ğ´ÏàÓ¦×´Ì¬»ú
 	reg [4:0] b_next_state;
-	// åœ°å€å·²ç»æ¡æ‰‹æˆåŠŸè€Œæœªå“åº”çš„æƒ…å†µï¼Œéœ€è¦è®¡æ•°
+	// µØÖ·ÒÑ¾­ÎÕÊÖ³É¹¦¶øÎ´ÏìÓ¦µÄÇé¿ö£¬ĞèÒª¼ÆÊı
 	reg [1:0] ar_resp_cnt;
 	reg [1:0] aw_resp_cnt;
 	reg [1:0] wd_resp_cnt;
-	// æ•°æ®å¯„å­˜å™¨ï¼Œ0-æŒ‡ä»¤SRAMå¯„å­˜å™¨ï¼Œ1-æ•°æ®SRAMå¯„å­˜å™¨ï¼ˆæ ¹æ®idç´¢å¼•ï¼‰
+	// Êı¾İ¼Ä´æÆ÷£¬0-Ö¸ÁîSRAM¼Ä´æÆ÷£¬1-Êı¾İSRAM¼Ä´æÆ÷£¨¸ù¾İidË÷Òı£©
 	reg [31:0] buf_rdata [1:0];
-	// æ•°æ®ç›¸å…³çš„åˆ¤æ–­ä¿¡å·
+	// Êı¾İÏà¹ØµÄÅĞ¶ÏĞÅºÅ
 	wire read_block;
-	// è‹¥å¹²å¯„å­˜å™¨
+	// Èô¸É¼Ä´æÆ÷
     reg  [ 3:0] rid_r;
 
-	localparam  IDLE = 5'b1;         //å„ä¸ªçŠ¶æ€æœºå…±ç”¨IDLEçŠ¶æ€  
+	localparam  IDLE = 5'b1;         //¸÷¸ö×´Ì¬»ú¹²ÓÃIDLE×´Ì¬  
 
 //state machine for read req channel
 
-    //è¯»è¯·æ±‚é€šé“çŠ¶æ€ç‹¬çƒ­ç è¯‘ç 
+    //¶ÁÇëÇóÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
     localparam  AR_REQ_START  	= 3'b010,
 				AR_REQ_END		= 3'b100;
-	//è¯»è¯·æ±‚é€šé“çŠ¶æ€æœºæ—¶åºé€»è¾‘
+	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
 	always @(posedge aclk) begin
 		if(~aresetn)
 			ar_current_state <= IDLE;
 		else 
 			ar_current_state <= ar_next_state;
 	end
-	//è¯»è¯·æ±‚é€šé“çŠ¶æ€æœºæ¬¡æ€ç»„åˆé€»è¾‘
+	//¶ÁÇëÇóÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
 	always @(*) begin
 		case(ar_current_state)
 			IDLE:begin
@@ -2960,17 +2939,17 @@ module bridge_sram_axi(
 
 //state machine for read response channel
 
-    //è¯»å“åº”é€šé“çŠ¶æ€ç‹¬çƒ­ç è¯‘ç 
+    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
     localparam  R_DATA_START   	= 3'b010,
 				R_DATA_END		= 3'b100;
-    //è¯»å“åº”é€šé“çŠ¶æ€æœºæ—¶åºé€»è¾‘
+    //¶ÁÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
 	always @(posedge aclk) begin
 		if(~aresetn)
 			r_current_state <= IDLE;
 		else 
 			r_current_state <= r_next_state;
 	end
-	//è¯»å“åº”é€šé“çŠ¶æ€æœºæ¬¡æ€ç»„åˆé€»è¾‘
+	//¶ÁÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
 	always @(*) begin
 		case(r_current_state)
 			IDLE:begin
@@ -2980,7 +2959,7 @@ module bridge_sram_axi(
 					r_next_state = IDLE;
 			end
 			R_DATA_START:begin
-				if(rvalid & rready & rlast) 	// ä¼ è¾“å®Œæ¯•
+				if(rvalid & rready & rlast) 	// ´«ÊäÍê±Ï
 					r_next_state = R_DATA_END;
 				else
 					r_next_state = R_DATA_START;
@@ -2994,19 +2973,19 @@ module bridge_sram_axi(
 
 //state machine for write req & data channel
 
-    //å†™è¯·æ±‚&å†™æ•°æ®é€šé“çŠ¶æ€ç‹¬çƒ­ç è¯‘ç 
+    //Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
 	localparam  W_REQ_START      		= 5'b00010,
 				W_ADDR_RESP				= 5'b00100,
 				W_DATA_RESP      		= 5'b01000,
 				W_REQ_END				= 5'b10000;
-    //å†™è¯·æ±‚&å†™æ•°æ®é€šé“çŠ¶æ€æœºæ—¶åºé€»è¾‘
+    //Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
 	always @(posedge aclk) begin
 		if(~aresetn)
 			w_current_state <= IDLE;
 		else 
 			w_current_state <= w_next_state;
 	end
-	//å†™è¯·æ±‚&å†™æ•°æ®é€šé“çŠ¶æ€æœºæ¬¡æ€ç»„åˆé€»è¾‘
+	//Ğ´ÇëÇó&Ğ´Êı¾İÍ¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
 	always @(*) begin
 		case(w_current_state)
 			IDLE:begin
@@ -3048,17 +3027,17 @@ module bridge_sram_axi(
 
 //state machine for write response channel
 
-    //å†™å“åº”é€šé“çŠ¶æ€ç‹¬çƒ­ç è¯‘ç 
+    //Ğ´ÏìÓ¦Í¨µÀ×´Ì¬¶ÀÈÈÂëÒëÂë
     localparam  B_START     = 3'b010,
 				B_END		= 3'b100;
-    //å†™å“åº”é€šé“çŠ¶æ€æœºæ—¶åºé€»è¾‘
+    //Ğ´ÏìÓ¦Í¨µÀ×´Ì¬»úÊ±ĞòÂß¼­
 	always @(posedge aclk) begin
 		if(~aresetn)
 			b_current_state <= IDLE;
 		else 
 			b_current_state <= b_next_state;
 	end
-	//å†™å“åº”é€šé“çŠ¶æ€æœºæ¬¡æ€ç»„åˆé€»è¾‘
+	//Ğ´ÏìÓ¦Í¨µÀ×´Ì¬»ú´ÎÌ¬×éºÏÂß¼­
 	always @(*) begin
 		case(b_current_state)
 			IDLE:begin
@@ -3087,10 +3066,10 @@ module bridge_sram_axi(
 			arid <= 4'b0;
 			araddr <= 32'b0;
 			arsize <= 3'b0;
-			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// å¸¸å€¼
+			{arlen, arburst, arlock, arcache, arprot} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0};	// ³£Öµ
 		end
-		else if(ar_current_state[0]) begin	// è¯»è¯·æ±‚çŠ¶æ€æœºä¸ºç©ºé—²çŠ¶æ€ï¼Œæ›´æ–°æ•°æ®
-			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// æ•°æ®RAMè¯·æ±‚ä¼˜å…ˆäºæŒ‡ä»¤RAM
+		else if(ar_current_state[0]) begin	// ¶ÁÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
+			arid <= {3'b0, data_sram_req & ~data_sram_wr};	// Êı¾İRAMÇëÇóÓÅÏÈÓÚÖ¸ÁîRAM
 			araddr <= data_sram_req & ~data_sram_wr? data_sram_addr : inst_sram_addr;
 			arsize <= data_sram_req & ~data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
 		end
@@ -3101,7 +3080,7 @@ module bridge_sram_axi(
     always @(posedge aclk) begin
 		if(~aresetn)
 			ar_resp_cnt <= 2'b0;
-		else if(arvalid & arready & rvalid & rready)	// è¯»åœ°å€å’Œæ•°æ®channelåŒæ—¶å®Œæˆæ¡æ‰‹
+		else if(arvalid & arready & rvalid & rready)	// ¶ÁµØÖ·ºÍÊı¾İchannelÍ¬Ê±Íê³ÉÎÕÊÖ
 			ar_resp_cnt <= ar_resp_cnt;		
 		else if(arvalid & arready)
 			ar_resp_cnt <= ar_resp_cnt + 1'b1;
@@ -3118,9 +3097,9 @@ module bridge_sram_axi(
 		if(~aresetn) begin
 			awaddr <= 32'b0;
 			awsize <= 3'b0;
-			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// å¸¸å€¼
+			{awlen, awburst, awlock, awcache, awprot, awid} <= {8'b0, 2'b1, 1'b0, 1'b0, 1'b0, 1'b1};	// ³£Öµ
 		end
-		else if(w_current_state[0]) begin	// å†™è¯·æ±‚çŠ¶æ€æœºä¸ºç©ºé—²çŠ¶æ€ï¼Œæ›´æ–°æ•°æ®
+		else if(w_current_state[0]) begin	// Ğ´ÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
 			awaddr <= data_sram_wr? data_sram_addr : inst_sram_addr;
 			awsize <= data_sram_wr? {1'b0, data_sram_size} : {1'b0, inst_sram_size};
 		end
@@ -3133,9 +3112,9 @@ module bridge_sram_axi(
 		if(~aresetn) begin
 			wstrb <= 4'b0;
 			wdata <= 32'b0;
-			{wid, wlast} <= {4'b1, 1'b1};	// å¸¸å€¼
+			{wid, wlast} <= {4'b1, 1'b1};	// ³£Öµ
 		end
-		else if(w_current_state[0]) begin	// å†™è¯·æ±‚çŠ¶æ€æœºä¸ºç©ºé—²çŠ¶æ€ï¼Œæ›´æ–°æ•°æ®
+		else if(w_current_state[0]) begin	// Ğ´ÇëÇó×´Ì¬»úÎª¿ÕÏĞ×´Ì¬£¬¸üĞÂÊı¾İ
 			wstrb <= data_sram_wstrb;
 			wdata <= data_sram_wdata;
 		end
@@ -3167,7 +3146,7 @@ module bridge_sram_axi(
 
 //rdata buffer
 
-	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// è¯»å†™åœ°å€ç›¸åŒä¸”æœ‰å†™æ“ä½œä¸”æ•°æ®æœªå†™å…¥
+	assign read_block = (araddr == awaddr) & (|w_current_state[4:1]) & ~b_current_state[2];	// ¶ÁĞ´µØÖ·ÏàÍ¬ÇÒÓĞĞ´²Ù×÷ÇÒÊı¾İÎ´Ğ´Èë
 	always @(posedge aclk)begin
 		if(!aresetn)
 			{buf_rdata[1], buf_rdata[0]} <= 64'b0;
@@ -3179,10 +3158,10 @@ module bridge_sram_axi(
 	assign data_sram_data_ok = rid_r[0] & r_current_state[2] | bid[0] & bvalid & bready; 
 	
 	assign inst_sram_rdata = buf_rdata[0];
-	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rreadyçš„ä¸‹ä¸€æ‹
+	assign inst_sram_data_ok = ~rid_r[0] & r_current_state[2] | ~bid[0] & bvalid & bready; // rvalid & rreadyµÄÏÂÒ»ÅÄ
 	assign inst_sram_addr_ok = ~arid[0] & arvalid & arready;
 
-	// data_ok ä¸é‡‡ç”¨å¦‚ä¸‹æ˜¯å› ä¸ºéœ€è¦ä»bufferä¸­æ‹¿æ•°æ®ï¼Œåˆ™è¦ç­‰åˆ°ä¸‹ä¸€æ‹
+	// data_ok ²»²ÉÓÃÈçÏÂÊÇÒòÎªĞèÒª´ÓbufferÖĞÄÃÊı¾İ£¬ÔòÒªµÈµ½ÏÂÒ»ÅÄ
 	// assign inst_sram_data_ok = ~rid[0] & rvalid & rready;
 
 	always @(posedge aclk)  begin
@@ -3191,4 +3170,245 @@ module bridge_sram_axi(
 		else if(rvalid & rready)
 			rid_r <= rid;
 	end	
+endmodule
+
+module tlb (
+    input  wire                      clk,
+    input  wire                      reset,
+
+    // search port 0 (for fetching instruction)
+    input  wire [              18:0] s0_vppn,
+    input  wire                      s0_va_bit12,
+    input  wire [               9:0] s0_asid,
+    output wire                      s0_found,
+    output wire [$clog2(`TLBNUM)-1:0] s0_index,
+    output wire [              19:0] s0_ppn,
+    output wire [               5:0] s0_ps,
+    output wire [               1:0] s0_plv,
+    output wire [               1:0] s0_mat,
+    output wire                      s0_d,
+    output wire                      s0_v,
+
+    // search port 1 (for load/store instructions)
+    input  wire [              18:0] s1_vppn,
+    input  wire                      s1_va_bit12,
+    input  wire [               9:0] s1_asid,
+    output wire                      s1_found,
+    output wire [$clog2(`TLBNUM)-1:0] s1_index,
+    output wire [              19:0] s1_ppn,
+    output wire [               5:0] s1_ps,
+    output wire [               1:0] s1_plv,
+    output wire [               1:0] s1_mat,
+    output wire                      s1_d,
+    output wire                      s1_v,
+
+    // invtlb opcode
+    input  wire                      invtlb_valid,
+    input  wire [               4:0] invtlb_op,
+
+    // write port
+    input  wire        inst_wb_tlbfill,
+
+    input  wire                      we,
+    input  wire [$clog2(`TLBNUM)-1:0] w_index,
+    input  wire                      w_e,
+    input  wire [              18:0] w_vppn,
+    input  wire [               5:0] w_ps,
+    input  wire [               9:0] w_asid,
+    input  wire                      w_g,
+    input  wire [              19:0] w_ppn0,
+    input  wire [               1:0] w_plv0,
+    input  wire [               1:0] w_mat0,
+    input  wire                      w_d0,
+    input  wire                      w_v0,
+    input  wire [              19:0] w_ppn1,
+    input  wire [               1:0] w_plv1,
+    input  wire [               1:0] w_mat1,
+    input  wire                      w_d1,
+    input  wire                      w_v1,
+
+    // read port
+    input  wire [$clog2(`TLBNUM)-1:0] r_index,
+    output wire                      r_e,
+    output wire [              18:0] r_vppn,
+    output wire [               5:0] r_ps,
+    output wire [               9:0] r_asid,
+    output wire                      r_g,
+    output wire [              19:0] r_ppn0,
+    output wire [               1:0] r_plv0,
+    output wire [               1:0] r_mat0,
+    output wire                      r_d0,
+    output wire                      r_v0,
+    output wire [              19:0] r_ppn1,
+    output wire [               1:0] r_plv1,
+    output wire [               1:0] r_mat1,
+    output wire                      r_d1,
+    output wire                      r_v1
+);
+
+genvar idx;
+// check if matched in parallel
+wire [`TLBNUM-1:0] match0;
+wire [`TLBNUM-1:0] match1;
+// conditions for invtlb_op matching
+wire [`TLBNUM-1:0] cond1;
+wire [`TLBNUM-1:0] cond2;
+wire [`TLBNUM-1:0] cond3;
+wire [`TLBNUM-1:0] cond4;
+// TLB term
+reg [`TLBNUM-1:0] tlb_e;
+reg [`TLBNUM-1:0] tlb_ps4MB; //pagesize 1:4MB, 0:4KB
+reg [18:0] tlb_vppn [`TLBNUM-1:0];
+reg [ 9:0] tlb_asid [`TLBNUM-1:0];
+reg        tlb_g    [`TLBNUM-1:0];
+reg [19:0] tlb_ppn0 [`TLBNUM-1:0];
+reg [ 1:0] tlb_plv0 [`TLBNUM-1:0];
+reg [ 1:0] tlb_mat0 [`TLBNUM-1:0];
+reg        tlb_d0   [`TLBNUM-1:0];
+reg        tlb_v0   [`TLBNUM-1:0];
+reg [19:0] tlb_ppn1 [`TLBNUM-1:0];
+reg [ 1:0] tlb_plv1 [`TLBNUM-1:0];
+reg [ 1:0] tlb_mat1 [`TLBNUM-1:0];
+reg        tlb_d1   [`TLBNUM-1:0];
+reg        tlb_v1   [`TLBNUM-1:0];
+
+wire [`TLBNUM-1:0] invtlb_mask [31:0];
+
+wire s0_whichpage;
+wire s1_whichpage;
+
+// search TLB
+genvar i;
+generate
+    for (i = 0; i < `TLBNUM; i = i + 1) begin
+        assign match0[i] = (s0_vppn[18:10]==tlb_vppn[i][18:10])
+                            && (tlb_ps4MB[i] || s0_vppn[9:0]==tlb_vppn[i][9:0])
+                            && ((s0_asid==tlb_asid[i]) || tlb_g[i]);
+        assign match1[i] = (s1_vppn[18:10]==tlb_vppn[i][18:10])
+                            && (tlb_ps4MB[i] || s1_vppn[9:0]==tlb_vppn[i][9:0])
+                            && ((s1_asid==tlb_asid[i]) || tlb_g[i]);
+    end
+endgenerate
+
+assign s0_found = |match0;
+assign s1_found = |match1;
+
+assign s0_index =   match0[ 1] ? 4'd1  :
+                    match0[ 2] ? 4'd2  :
+                    match0[ 3] ? 4'd3  :
+                    match0[ 4] ? 4'd4  :
+                    match0[ 5] ? 4'd5  :
+                    match0[ 6] ? 4'd6  :
+                    match0[ 7] ? 4'd7  :
+                    match0[ 8] ? 4'd8  :
+                    match0[ 9] ? 4'd9  :
+                    match0[10] ? 4'd10 :
+                    match0[11] ? 4'd11 :
+                    match0[12] ? 4'd12 :
+                    match0[13] ? 4'd13 :
+                    match0[14] ? 4'd14 :
+                    match0[15] ? 4'd15 :
+                    4'd0; 
+assign s1_index =   match1[ 1] ? 4'd1  :
+                    match1[ 2] ? 4'd2  :
+                    match1[ 3] ? 4'd3  :
+                    match1[ 4] ? 4'd4  :
+                    match1[ 5] ? 4'd5  :
+                    match1[ 6] ? 4'd6  :
+                    match1[ 7] ? 4'd7  :
+                    match1[ 8] ? 4'd8  :
+                    match1[ 9] ? 4'd9  :
+                    match1[10] ? 4'd10 :
+                    match1[11] ? 4'd11 :
+                    match1[12] ? 4'd12 :
+                    match1[13] ? 4'd13 :
+                    match1[14] ? 4'd14 :
+                    match1[15] ? 4'd15 :
+                    4'd0; 
+
+assign s0_whichpage = tlb_ps4MB[s0_index] ? s0_vppn[9] : s0_va_bit12; // 4MBÒ³µÄvppnÖ»ÓĞ18:9Î»ÓĞĞ§
+assign s0_ps        = tlb_ps4MB[s0_index] ? 6'd22 : 6'd12;
+assign s0_ppn       = s0_whichpage ? tlb_ppn1[s0_index] : tlb_ppn0[s0_index];
+assign s0_plv       = s0_whichpage ? tlb_plv1[s0_index] : tlb_plv0[s0_index];
+assign s0_mat       = s0_whichpage ? tlb_mat1[s0_index] : tlb_mat0[s0_index];
+assign s0_d         = s0_whichpage ? tlb_d1  [s0_index] : tlb_d0  [s0_index];
+assign s0_v         = s0_whichpage ? tlb_v1  [s0_index] : tlb_v0  [s0_index];
+
+
+assign s1_whichpage = tlb_ps4MB[s1_index] ? s1_vppn[9] : s1_va_bit12; // 4MBÒ³µÄvppnÖ»ÓĞ18:10Î»ÓĞĞ§
+assign s1_ps        = tlb_ps4MB[s1_index] ? 6'd22 : 6'd12;
+assign s1_ppn       = s1_whichpage ? tlb_ppn1[s1_index] : tlb_ppn0[s1_index];
+assign s1_plv       = s1_whichpage ? tlb_plv1[s1_index] : tlb_plv0[s1_index];
+assign s1_mat       = s1_whichpage ? tlb_mat1[s1_index] : tlb_mat0[s1_index];
+assign s1_d         = s1_whichpage ? tlb_d1  [s1_index] : tlb_d0  [s1_index];
+assign s1_v         = s1_whichpage ? tlb_v1  [s1_index] : tlb_v0  [s1_index];
+
+// INVTLB
+generate
+    for (i = 0; i < `TLBNUM; i = i + 1) begin
+       assign cond1[i] = ~tlb_g[i];
+       assign cond2[i] =  tlb_g[i];
+       assign cond3[i] = s1_asid == tlb_asid[i];
+       assign cond4[i] = (s1_vppn[18:10] == tlb_vppn[i][18:10])&&(tlb_ps4MB[i]||(s1_vppn[9:0] == tlb_vppn[i][9:0]));
+    end
+endgenerate
+
+assign invtlb_mask[0] = 16'hffff;  
+assign invtlb_mask[1] = 16'hffff;
+assign invtlb_mask[2] = cond2;
+assign invtlb_mask[3] = cond1;
+assign invtlb_mask[4] = cond1 & cond3;
+assign invtlb_mask[5] = cond1 & cond3 & cond4;
+assign invtlb_mask[6] = (cond1|cond3) & cond4;
+generate
+    for (i = 7; i < 32; i = i + 1) begin
+        assign invtlb_mask[i] = 16'b0;
+    end
+endgenerate
+
+
+// write TLB
+
+always @ (posedge clk) begin
+    if (we) begin
+        tlb_e      [w_index] <= w_e;
+        tlb_ps4MB  [w_index] <= (w_ps == 6'd22);
+
+        tlb_vppn   [w_index] <= w_vppn;
+        tlb_asid   [w_index] <= w_asid;
+        tlb_g      [w_index] <= w_g;
+
+        tlb_ppn0   [w_index] <= w_ppn0;
+        tlb_plv0   [w_index] <= w_plv0;
+        tlb_mat0   [w_index] <= w_mat0;
+        tlb_d0     [w_index] <= w_d0;
+        tlb_v0     [w_index] <= w_v0;
+
+        tlb_ppn1   [w_index] <= w_ppn1;
+        tlb_plv1   [w_index] <= w_plv1;
+        tlb_mat1   [w_index] <= w_mat1;
+        tlb_d1     [w_index] <= w_d1;
+        tlb_v1     [w_index] <= w_v1;
+    end 
+    else if(invtlb_valid)
+        tlb_e <= ~invtlb_mask[invtlb_op] & tlb_e; 
+end
+
+// read TLB
+assign r_e    = tlb_e    [r_index];
+assign r_vppn = tlb_vppn [r_index];
+assign r_ps   = tlb_ps4MB[r_index] ? 6'd22 : 6'd12;
+assign r_asid = tlb_asid [r_index];
+assign r_g    = tlb_g    [r_index];
+assign r_ppn0 = tlb_ppn0 [r_index];
+assign r_plv0 = tlb_plv0 [r_index];
+assign r_mat0 = tlb_mat0 [r_index];
+assign r_d0   = tlb_d0   [r_index];
+assign r_v0   = tlb_v0   [r_index];
+assign r_ppn1 = tlb_ppn1 [r_index];
+assign r_plv1 = tlb_plv1 [r_index];
+assign r_mat1 = tlb_mat1 [r_index];
+assign r_d1   = tlb_d1   [r_index];
+assign r_v1   = tlb_v1   [r_index];
+
 endmodule
