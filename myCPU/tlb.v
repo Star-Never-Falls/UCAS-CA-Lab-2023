@@ -171,7 +171,7 @@ assign s1_v       = page_sel_1 ? tlb_v1[s1_index]   : tlb_v0[s1_index];
 
 // INVTLB
 generate
-    for (idx = 0; idx < 4; idx = idx + 1)
+    for (idx = 0; idx < TLBNUM; idx = idx + 1)
     begin : COND_AND_MATCH
         assign cond1[idx] = ~tlb_g[idx];
         assign cond2[idx] = tlb_g[idx];
@@ -194,10 +194,10 @@ always @(posedge clk) begin
     if (we)
         tlb_e[w_index] <= w_e;
     else if (invtlb_valid)
-        tlb_e          <= ~inv_match & tlb_e;
+        tlb_e          <= ~inv_match & tlb_e; 
 end
 
-// write TLB
+// write TLB (except for tlb_e)
 always @(posedge clk) begin
     if (we) begin
         tlb_vppn [w_index] <= w_vppn;
