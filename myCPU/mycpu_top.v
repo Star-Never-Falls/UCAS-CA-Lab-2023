@@ -3207,6 +3207,8 @@ module bridge_sram_axi(
 			AR_REQ_END:begin
 				ar_next_state = IDLE;
 			end
+            default:
+                ar_next_state = IDLE;
 		endcase
 	end
 
@@ -3295,6 +3297,8 @@ module bridge_sram_axi(
 					w_next_state = IDLE;
 				else
 					w_next_state = W_REQ_END;
+            default:
+                w_next_state = IDLE;
 		endcase
 	end
 
@@ -3328,6 +3332,8 @@ module bridge_sram_axi(
 			B_END:begin
 				b_next_state = IDLE;
 			end
+            default:
+                b_next_state = IDLE;
 		endcase
 	end
 
