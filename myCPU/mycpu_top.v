@@ -957,9 +957,9 @@ module IFreg(
 
     assign {tlb_except_zip[`TLB_EXC_TLBR_LS], tlb_except_zip[`TLB_EXC_PIL], tlb_except_zip[`TLB_EXC_PIS], 
             tlb_except_zip[`TLB_EXC_PME], tlb_except_zip[`TLB_EXC_PPI_LS]} = 5'd0;
-    assign tlb_except_zip[`TLB_EXC_TLBR_F]  = fs_valid & tlb_mode & ~s0_found;
-    assign tlb_except_zip[`TLB_EXC_PIF]     = fs_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_TLBR_F] & ~s0_v;
-    assign tlb_except_zip[`TLB_EXC_PPI_F]   = fs_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_PIF] & (crmd_plv_CSRoutput > s0_plv);
+    assign tlb_except_zip[`TLB_EXC_TLBR_F] = fs_valid & tlb_mode & ~s0_found;
+    assign tlb_except_zip[`TLB_EXC_PIF]    = fs_valid & tlb_mode &  s0_found & ~s0_v;
+    assign tlb_except_zip[`TLB_EXC_PPI_F]  = fs_valid & tlb_mode &  s0_found &  s0_v & (crmd_plv_CSRoutput > s0_plv);
 
 //inst sram interface
 
@@ -1545,10 +1545,8 @@ module IDreg(
     assign {es_inst_tlbrd, es_csr_we, es_csr_num} = es_tlb_zip;
     assign {ms_inst_tlbrd, ms_csr_we, ms_csr_num} = ms_tlb_zip;
     assign tlb_blk = ms_tlb_blk || es_tlb_blk;
-    assign es_tlb_blk = type_ld_st && (es_inst_tlbrd || (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_CRMD || es_csr_num == `CSR_DMW0 || es_csr_num == `CSR_DMW1))) ||
-                        inst_tlbsrch && (es_inst_tlbrd ||(es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI)));
-    assign ms_tlb_blk = type_ld_st && (ms_inst_tlbrd || (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_CRMD || ms_csr_num == `CSR_DMW0 || ms_csr_num == `CSR_DMW1))) ||
-                        inst_tlbsrch && (ms_inst_tlbrd || (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI)));
+    assign es_tlb_blk = inst_tlbsrch && (es_inst_tlbrd || (es_csr_we && (es_csr_num == `CSR_ASID || es_csr_num == `CSR_TLBEHI)));
+    assign ms_tlb_blk = inst_tlbsrch && (ms_inst_tlbrd || (ms_csr_we && (ms_csr_num == `CSR_ASID || ms_csr_num == `CSR_TLBEHI)));
 
 //ds to es interface
     assign ds2es_bus = {ds_alu_op,          //19 bit
@@ -1774,11 +1772,11 @@ module EXEreg(
 //tlb exception
 
     assign {tlb_except_zip[`TLB_EXC_TLBR_F], tlb_except_zip[`TLB_EXC_PIF], tlb_except_zip[`TLB_EXC_PPI_F]} = 3'd0;
-    assign tlb_except_zip[`TLB_EXC_TLBR_LS] = es_valid & tlb_mode & ~s1_found;
-    assign tlb_except_zip[`TLB_EXC_PIL]     = es_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_TLBR_LS] & es_res_from_mem & ~s1_v;
-    assign tlb_except_zip[`TLB_EXC_PIS]     = es_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_TLBR_LS] & (|es_mem_we) & ~s1_v;
-    assign tlb_except_zip[`TLB_EXC_PME]     = es_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_PPI_LS] & (|es_mem_we) & ~s1_d;
-    assign tlb_except_zip[`TLB_EXC_PPI_LS]  = es_valid & tlb_mode & ~tlb_except_zip[`TLB_EXC_PIL] & ~tlb_except_zip[`TLB_EXC_PIS] & (crmd_plv_CSRoutput > s1_plv);
+    assign tlb_except_zip[`TLB_EXC_TLBR_LS] = es_valid & tlb_mode                   & ~s1_found;
+    assign tlb_except_zip[`TLB_EXC_PIL]     = es_valid & tlb_mode & es_res_from_mem &  s1_found & ~s1_v;
+    assign tlb_except_zip[`TLB_EXC_PIS]     = es_valid & tlb_mode & (|es_mem_we)    &  s1_found & ~s1_v;
+    assign tlb_except_zip[`TLB_EXC_PME]     = es_valid & tlb_mode & (|es_mem_we)    &  s1_found &  s1_v & (crmd_plv_CSRoutput <= s1_plv) & ~s1_d;
+    assign tlb_except_zip[`TLB_EXC_PPI_LS]  = es_valid & tlb_mode                   &  s1_found &  s1_v & (crmd_plv_CSRoutput >  s1_plv);
     assign es_tlb_except_zip = ds2es_tlb_except_zip | tlb_except_zip;
 
 //data sram interface
@@ -1791,7 +1789,7 @@ module EXEreg(
     assign es_mem_req       = (es_res_from_mem | (|es_mem_we)) & ~wb_ex & ~ms_ex & ~es_ex;
     assign data_sram_req    = es_mem_req & es_valid & ms_allowin;
     assign data_sram_wr     = (|data_sram_wstrb) & es_valid & ~wb_ex & ~ms_ex & ~es_ex;
-    assign data_sram_wstrb  =  es_mem_we;
+    assign data_sram_wstrb  = es_mem_we;
     assign data_sram_size   = {2{op_st_b}} & 2'b0 | {2{op_st_h}} & 2'b1 | {2{op_st_w}} & 2'd2;
     assign data_sram_addr   = mem_acc_pa;
     assign data_sram_wdata[ 7: 0]   = es_rkd_value[ 7: 0];
@@ -2695,7 +2693,7 @@ module csr(
     assign tlbrentry_data = {tlbrentry_pa, 6'h0};
 
     // DMW0
-    always @(posedge clk ) begin
+    always @(posedge clk) begin
         if (reset) begin
             dmw0_plv0 <= 1'b0;
             dmw0_plv3 <= 1'b0;
@@ -2723,7 +2721,7 @@ module csr(
     assign dmw0_data = {dmw0_vseg, 1'b0, dmw0_pseg, 19'd0, dmw0_mat, dmw0_plv3, 2'd0, dmw0_plv0};
 
     // DMW1
-    always @(posedge clk ) begin
+    always @(posedge clk) begin
         if (reset) begin
             dmw1_plv0 <= 1'b0;
             dmw1_plv3 <= 1'b0;
@@ -2750,7 +2748,7 @@ module csr(
     assign dmw1_vseg_CSRoutput = dmw1_vseg;
     assign dmw1_data = {dmw1_vseg, 1'b0, dmw1_pseg, 19'd0, dmw1_mat, dmw1_plv3, 2'd0, dmw1_plv0};
 
-    // 直接映射地址翻译模式
+    // 直接地址翻译模式
     assign dir_addr_trans_mode = csr_crmd_da & ~csr_crmd_pg;
 endmodule
 
