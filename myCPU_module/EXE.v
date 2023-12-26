@@ -12,7 +12,6 @@ module EXEreg(
     output wire [39:0] es_rf_zip, // {es_csr_re, es_res_from_mem, es_rf_we, es_rf_waddr, es_alu_result}
     output wire [`TLB_CONFLICT_BUS_LEN-1:0] es_tlb_zip,
     output wire        es2ms_valid,
-    output reg  [31:0] es_pc,    
     // data sram interface
     output wire         data_sram_req,
     output wire         data_sram_wr,
@@ -78,6 +77,8 @@ module EXEreg(
     wire        op_st_b;
     wire        op_st_h;
     wire        op_st_w;
+
+    reg  [31:0] es_pc;
 
     wire        rd_cnt_h;
     wire        rd_cnt_l;

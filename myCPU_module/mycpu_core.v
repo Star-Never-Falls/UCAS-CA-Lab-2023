@@ -39,8 +39,6 @@ module mycpu_core(
     wire        es2ms_valid;
     wire        ms2ws_valid;
 
-    wire [31:0] es_pc;
-    wire [31:0] ms_pc;
     wire [31:0] wb_pc;
 
     wire [39:0] es_rf_zip;
@@ -48,7 +46,6 @@ module mycpu_core(
     wire [37:0] ws_rf_zip;
 
     wire [33:0] br_zip;
-    wire [ 4:0] es_ld_inst_zip;
     wire [`FS2DS_LEN -1:0] fs2ds_bus;
     wire [`DS2ES_LEN -1:0] ds2es_bus;
     wire [`ES2MS_LEN -1:0] es2ms_bus;
@@ -104,7 +101,6 @@ module mycpu_core(
     wire [ 4:0] invtlb_op;
 
     wire        tlb_we;
-    wire [`TLBNUM_IDX-1:0] w_index;
     wire        w_e;
     wire [18:0] tlbehi_vppn_CSRoutput;
     wire [ 5:0] w_ps; // 21:4MB 12:4KB
@@ -121,7 +117,6 @@ module mycpu_core(
     wire        w_d1;
     wire        w_v1;
 
-    wire [`TLBNUM_IDX-1:0] r_index;
     wire        r_e;
     wire [18:0] r_vppn;
     wire [ 5:0] r_ps;

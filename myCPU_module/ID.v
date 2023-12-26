@@ -177,12 +177,6 @@ module IDreg(
     wire        conflict_r2_mem;
     wire        conflict_r1_exe;
     wire        conflict_r2_exe;
-    reg         conflict_r1_wb_r;
-    reg         conflict_r2_wb_r;
-    reg         conflict_r1_mem_r;
-    reg         conflict_r2_mem_r;
-    reg         conflict_r1_exe_r;
-    reg         conflict_r2_exe_r;
 
     wire        need_r1;
     wire        need_r2;

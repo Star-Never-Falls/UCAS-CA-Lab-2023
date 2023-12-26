@@ -5,7 +5,7 @@ module WBreg(
     // mem and ws state interface
     output wire        ws_allowin,
     input  wire [`MS2WS_LEN -1:0] ms2ws_bus,
-    input  wire [38:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
+    input  wire [39:0] ms_rf_zip, // {ms_csr_re, ms_rf_we, ms_rf_waddr, ms_rf_wdata}
     input  wire        ms2ws_valid,
     // trace debug interface
     output wire [31:0] debug_wb_pc,
