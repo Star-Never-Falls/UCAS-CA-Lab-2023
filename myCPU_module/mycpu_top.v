@@ -49,16 +49,16 @@ module mycpu_top(
     output wire [31:0] debug_wb_rf_wdata
 );
 
-    // inst sram interface
+    // inst sram interface (some signals modified due to I-Cache)
     wire        inst_sram_req;
     wire        inst_sram_wr;
     wire [ 1:0] inst_sram_size;
     wire [ 3:0] inst_sram_wstrb;
     wire [31:0] inst_sram_addr;
     wire [31:0] inst_sram_wdata;
-    wire        inst_sram_addr_ok;
-    wire        inst_sram_data_ok;
-    wire [31:0] inst_sram_rdata;
+    wire        icache_cpu_addr_ok;
+    wire        icache_cpu_data_ok;
+    wire [31:0] icache_cpu_rdata;
     // data sram interface
     wire        data_sram_req;
     wire        data_sram_wr;
@@ -69,6 +69,20 @@ module mycpu_top(
     wire        data_sram_addr_ok;
     wire        data_sram_data_ok;
     wire [31:0] data_sram_rdata;
+    // I-Cache interface 
+    wire         icache_axi_rd_req;
+    wire [  2:0] icache_axi_rd_type;
+    wire [ 31:0] icache_axi_rd_addr;
+    wire         icache_axi_rd_rdy;
+	wire         icache_axi_ret_valid;
+	wire [  1:0] icache_axi_ret_last;
+	wire [ 31:0] icache_axi_ret_data;
+    // wr_* signals reserved to avoid ports suspending
+    wire         icache_axi_wr_req;
+    wire [  2:0] icache_axi_wr_type;
+    wire [ 31:0] icache_axi_wr_addr;
+	wire [  3:0] icache_axi_wr_wstrb;
+    wire [127:0] icache_wr_data;
 
     mycpu_core my_core(
         .clk            (aclk       ),
@@ -80,10 +94,9 @@ module mycpu_top(
         .inst_sram_wstrb    (inst_sram_wstrb    ),
         .inst_sram_addr     (inst_sram_addr     ),
         .inst_sram_wdata    (inst_sram_wdata    ),
-        .inst_sram_addr_ok  (inst_sram_addr_ok  ),
-        .inst_sram_data_ok  (inst_sram_data_ok  ),
-        .inst_sram_rdata    (inst_sram_rdata    ),
-        .axi_arid           (arid               ),
+        .inst_sram_addr_ok  (icache_cpu_addr_ok ),
+        .inst_sram_data_ok  (icache_cpu_data_ok ),
+        .inst_sram_rdata    (icache_cpu_rdata   ),
         // data sram interface
         .data_sram_req      (data_sram_req      ),
         .data_sram_wr       (data_sram_wr       ),
@@ -99,7 +112,38 @@ module mycpu_top(
         .debug_wb_rf_we     (debug_wb_rf_we     ),
         .debug_wb_rf_wnum   (debug_wb_rf_wnum   ),
         .debug_wb_rf_wdata  (debug_wb_rf_wdata  )
-    ); 
+    );
+
+    cache my_icache(
+        .clk      (aclk                 ),
+        .resetn   (aresetn              ),
+        // cpu-icache interface
+        .valid    (inst_sram_req        ),
+	    .op       (inst_sram_wr         ),
+        .index    (inst_sram_addr[11:4] ),
+	    .tag      (inst_sram_addr[31:12]),
+	    .offset   (inst_sram_addr[3:0]  ),
+        .wstrb    (inst_sram_wstrb      ),
+	    .wdata    (inst_sram_wdata      ),
+	    .addr_ok  (icache_cpu_addr_ok   ),
+	    .data_ok  (icache_cpu_data_ok   ),
+	    .rdata    (icache_cpu_rdata     ),
+	    // icache-axi interface
+        .rd_req   (icache_axi_rd_req    ),
+        .rd_type  (icache_axi_rd_type   ),
+        .rd_addr  (icache_axi_rd_addr   ),
+	    .rd_rdy   (icache_axi_rd_rdy    ),
+	    .ret_valid(icache_axi_ret_valid ),
+	    .ret_last (icache_axi_ret_last  ),
+	    .ret_data (icache_axi_ret_data  ),
+        // invalid in I-Cache (reserved to avoid ports suspending)
+        .wr_req   (icache_axi_wr_req    ),
+        .wr_type  (icache_axi_wr_type   ),
+        .wr_addr  (icache_axi_wr_addr   ),
+	    .wr_wstrb (icache_axi_wr_wstrb  ),
+        .wr_data  (icache_wr_data       ),
+	    .wr_rdy   (1'b1                 )
+    );
 
     bridge_sram_axi my_bridge_sram_axi(
         .aclk               (aclk               ),
@@ -121,6 +165,7 @@ module mycpu_top(
         .rvalid             (rvalid             ),
         .rlast              (rlast              ),
         .rready             (rready             ),
+        .rresp              (rresp              ),
 
         .awid               (awid               ),
         .awaddr             (awaddr             ),
@@ -143,16 +188,15 @@ module mycpu_top(
         .bid                (bid                ),
         .bvalid             (bvalid             ),
         .bready             (bready             ),
-
-        .inst_sram_req      (inst_sram_req      ),
-        .inst_sram_wr       (inst_sram_wr       ),
-        .inst_sram_size     (inst_sram_size     ),
-        .inst_sram_addr     (inst_sram_addr     ),
-        .inst_sram_wstrb    (inst_sram_wstrb    ),
-        .inst_sram_wdata    (inst_sram_wdata    ),
-        .inst_sram_addr_ok  (inst_sram_addr_ok  ),
-        .inst_sram_data_ok  (inst_sram_data_ok  ),
-        .inst_sram_rdata    (inst_sram_rdata    ),
+        .bresp              (bresp              ),
+        // modified due to I-Cache
+        .icache_axi_rd_req   (icache_axi_rd_req   ),
+        .icache_axi_rd_type  (icache_axi_rd_type  ),
+        .icache_axi_rd_addr  (icache_axi_rd_addr  ),
+	    .icache_axi_rd_rdy   (icache_axi_rd_rdy   ),
+	    .icache_axi_ret_valid(icache_axi_ret_valid),
+	    .icache_axi_ret_last (icache_axi_ret_last ),
+	    .icache_axi_ret_data (icache_axi_ret_data ),
 
         .data_sram_req      (data_sram_req      ),
         .data_sram_wr       (data_sram_wr       ),

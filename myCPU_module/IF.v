@@ -12,7 +12,6 @@ module IFreg(
     input  wire         inst_sram_addr_ok,
     input  wire         inst_sram_data_ok,
     input  wire [31:0]  inst_sram_rdata,
-    input  wire [ 3:0]  axi_arid,
     // TLB related signals
     output wire [           18:0] s0_vppn,
     output wire                   s0_va_bit12,
@@ -49,7 +48,6 @@ module IFreg(
 );
     wire        pf_ready_go;
     wire        to_fs_valid;
-    reg         instruction_hint;
     reg         fs_valid;
     wire        fs_ready_go;
     wire        fs_allowin;
@@ -96,7 +94,7 @@ module IFreg(
 //pre-IF signal
 
     assign pf_ready_go      = inst_sram_req & inst_sram_addr_ok; 
-    assign to_fs_valid      = pf_ready_go & ~pf_cancel & ~instruction_hint;
+    assign to_fs_valid      = pf_ready_go & ~pf_cancel;
     assign seq_pc           = fs_pc + 3'h4;  
     assign nextpc           = wb_ex_r? ex_entry_r: wb_ex? ex_entry:
                               ertn_flush_r? ertn_entry_r: ertn_flush? ertn_entry:
@@ -121,14 +119,6 @@ module IFreg(
         else if(pf_ready_go) begin
             {wb_ex_r, ertn_flush_r, br_taken_r} <= 3'b0;
         end
-    end
-    always @(posedge clk) begin
-        if(~resetn)
-            instruction_hint <= 1'b0;
-        else if(pf_cancel & ~instruction_hint & ~axi_arid[0] & ~inst_sram_data_ok)
-            instruction_hint <= 1'b1;
-        else if(inst_sram_data_ok)
-            instruction_hint <= 1'b0;
     end
 
     always @(posedge clk) begin
@@ -178,7 +168,7 @@ module IFreg(
 
 //inst sram interface
 
-    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~instruction_hint & ~inst_sram_addr_finish;
+    assign inst_sram_req    = fs_allowin & resetn & ~br_stall & ~inst_sram_addr_finish;
     assign inst_sram_wr     = |inst_sram_wstrb;
     assign inst_sram_wstrb  = 4'b0;
     assign inst_sram_addr   = nextpc_pa;
@@ -192,8 +182,8 @@ module IFreg(
     always @(posedge clk) begin
         if(~resetn)
             inst_discard <= 1'b0;
-        // 流水级取消：当pre-IF阶段发送错误地址请求已被指令SRAM接受 or IF内有有效指令且正在等待数据返回时，需要丢弃一条指令
-        else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & inst_sram_req)
+        // 流水级取消：IF内有有效指令且正在等待数据返回 or pre-IF阶段发送错误地址请求已被I-Cache接受
+        else if(fs_cancel & ~fs_allowin & ~fs_ready_go | pf_cancel & pf_ready_go)
             inst_discard <= 1'b1;
         else if(inst_discard & inst_sram_data_ok)
             inst_discard <= 1'b0;
