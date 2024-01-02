@@ -19,6 +19,7 @@ module IDreg(
     input  wire [`TLB_CONFLICT_BUS_LEN-1:0] ms_tlb_zip,
     // exception interface
     input  wire        has_int,
+    input  wire        wait_data_block,
     input  wire        wb_ex
 );
 
@@ -222,7 +223,7 @@ module IDreg(
     assign ds_allowin       = ~ds_valid | ds_ready_go & es_allowin; 
     assign ds_stall         = (es_res_from_mem|es_csr_re) & (conflict_r1_exe & need_r1| conflict_r2_exe & need_r2)|
                               (ms_res_from_mem|ms_csr_re) & (conflict_r1_mem & need_r1| conflict_r2_mem & need_r2)|
-                              tlb_blk;    
+                              tlb_blk | wait_data_block;    
     assign br_stall         = ds_stall & type_bj;
     assign ds2es_valid      = ds_valid & ds_ready_go;
     always @(posedge clk) begin
@@ -258,7 +259,7 @@ module IDreg(
                     | inst_jirl
                     | inst_bl
                     | inst_b
-                    ) & ds_valid & ~br_stall;
+                    ) & ds_valid & ~br_stall & ~wait_data_block;
     assign br_target = (inst_beq || inst_bne || inst_bl || inst_b || 
                         inst_bge || inst_bgeu|| inst_blt|| inst_bltu) ? (ds_pc + br_offs) :
                                                     /*inst_jirl*/ (rj_value + jirl_offs);

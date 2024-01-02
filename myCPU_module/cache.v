@@ -56,15 +56,12 @@ module cache(
     wire    [ 1:0] r_offset;
 	reg     [31:0] wdata_r;
     reg     [ 1:0] rd_cnt;
-    reg     [31:0] rdata_r;
     reg            wr_req_r;
 
-    reg            busy;
 	wire           rplc_way;
 	wire  [127:0]  rplc_data;  
 	reg   [127:0]  rplc_data_r;
 	wire  [ 19:0]  rplc_addr;
-    reg            data_ok_vld;
 
     wire 	       tag0_we;
 	wire  [ 20:0]  tag0_rdata;
@@ -78,7 +75,6 @@ module cache(
 	wire [ 20:0]   way_tagv_wdata;
     reg  [  7:0]   lfsr_rdm;
     reg  [255:0]   dirty [1:0];
-    reg  [255:0]   valid_array [1:0];
     wire [ 19:0]   way0_tag;
 	wire [ 19:0]   way1_tag;
     wire [ 31:0]   way0_ld_w;
@@ -139,10 +135,10 @@ module cache(
                     next_state<=`WAIT;
 				else if(cache_hit&valid) //cache命中且有新请求
 					next_state<=`LOOK;
-                else if(~dirty[rplc_way][index_r]|~valid_array[rplc_way][index_r])
-					next_state<=`RPLC;
+                else if(~cache_hit)
+					next_state<=`MISS;
                 else
-                    next_state<=`MISS;
+                    next_state<=`LOOK;
             `MISS:
                 if(~wr_rdy)begin  //写请求不能被接收
                     next_state<=`MISS;
@@ -231,32 +227,12 @@ module cache(
 	assign wr_req = wr_req_r;
 	assign wr_type = 3'b100;
 
-	always@(posedge clk) begin
-		if(~resetn) begin
-			rdata_r <= 0;
-		end
-		else if(state[1]&cache_hit)
-			rdata_r <= ld_res;
-		else if(r_offset==rd_cnt&ret_valid)
-			rdata_r <= ret_data;
-	end
-	assign rdata = rdata_r;
+	assign rdata = {32{state[1]}} & ld_res | {32{state[4]}} & ret_data;
     //处理器信号
-    always @(posedge clk ) begin
-        if(~resetn)begin
-            data_ok_vld<=1'b0;
-        end
-        else if(valid)begin
-            data_ok_vld<=1'b1;
-        end
-        else if(data_ok)begin
-            data_ok_vld<=1'b0;
-        end
-    end
-    assign data_ok = state[0]&data_ok_vld;
-	assign addr_ok = state[1]|state[0]&~valid; 
+    assign data_ok = state[1] & (cache_hit | op_r) | state[4] & ret_valid & ~op_r & (rd_cnt == offset_r[3:2]);
+	assign addr_ok = state[0] & ~write_hit_blk | state[1] & next_state[1]; 
     //tagv
-	assign way_tagv_addr 	= busy?index_r:valid?index:8'b0;
+	assign way_tagv_addr 	= {8{(state[0] | state[1])}} & index | {8{(state[2] | state[4])}} & index_r;
 	assign way_tagv_wdata	= {tag_r,1'b1};
 	assign tag0_we 	= state[4]&~rplc_way;
 	assign tag1_we 	= state[4]&rplc_way;
@@ -284,7 +260,7 @@ module cache(
     assign  rplc_way = lfsr_rdm[0];
     //Request Buffer
     always@(posedge clk)begin
-        if(~resetn|busy&data_ok) begin
+        if(~resetn) begin
             op_r<=1'b0;
 			index_r<=8'b0;
 			tag_r<=20'b0;
@@ -292,21 +268,13 @@ module cache(
 			wstrb_r<=4'b0;
 			wdata_r<=32'b0;
         end
-        if(state[0]&valid) begin
+        if(next_state[1]) begin
             op_r<=op;
 			index_r<=index;
 			tag_r<=tag;
 			offset_r<=offset;
 			wstrb_r<=wstrb;
 			wdata_r<=wdata;
-        end
-    end
-	always@(posedge clk)begin
-        if(~resetn|busy&data_ok) begin
-            busy <= 1'b0;
-        end
-        if(state[0]&valid) begin
-            busy <= 1'b1;
         end
     end
 	//dirty
@@ -319,15 +287,6 @@ module cache(
 		end
 		else if(ret_last&ret_valid)begin //最后一个字已经被缓存
 			dirty[rplc_way][index_r]<=op_r;
-		end
-	end
-	//valid
-	always @(posedge clk ) begin
-		if(~resetn)begin //启动或复位时清零
-			valid_array[0]<=256'b0;valid_array[1]<=256'b0;
-		end
-		else if(ret_last&ret_valid)begin //最后一笔数据有效，有效位置1
-			valid_array[rplc_way][index_r]<=1'b1;
 		end
 	end
 

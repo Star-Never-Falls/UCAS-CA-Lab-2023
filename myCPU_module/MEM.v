@@ -17,6 +17,7 @@ module MEMreg(
     input  wire         data_sram_data_ok,
     input  wire [31:0]  data_sram_rdata,
     // exception signal
+    output wire        wait_data_block,
     output wire        ms_ex,
     input  wire        wb_ex   
 );
@@ -79,6 +80,7 @@ module MEMreg(
             ms_valid <= es2ms_valid; 
     end
     assign ms_ex = ((|ms_except_zip) | (|es2ms_tlb_except_zip)) & ~ms_refetch_flag & ms_valid;
+    assign wait_data_block = ms_wait_data_ok & ~data_sram_data_ok;
     
 //data buffer
 

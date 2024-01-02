@@ -159,6 +159,7 @@ module mycpu_core(
     wire        dir_addr_trans_mode;
     wire [ 5:0] estat_ecode_CSRoutput;
     wire        is_fs_except;
+    wire        wait_data_block;
 
     assign refetch_target = ertn_flush ? ertn_entry : debug_wb_pc + 32'd4; // Refetch Target
 
@@ -230,6 +231,7 @@ module mycpu_core(
         .ms_tlb_zip(ms_tlb_zip),
 
         .has_int(has_int),
+        .wait_data_block(wait_data_block),
         .wb_ex(wb_ex|ertn_flush|wb_refetch_flush)
     );
 
@@ -304,6 +306,7 @@ module mycpu_core(
         .data_sram_data_ok(data_sram_data_ok),
         .data_sram_rdata(data_sram_rdata),
 
+        .wait_data_block(wait_data_block),
         .ms_ex(ms_ex),
         .wb_ex(wb_ex|ertn_flush|wb_refetch_flush)
     ) ;

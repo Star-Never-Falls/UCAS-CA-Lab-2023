@@ -156,7 +156,7 @@ module bridge_sram_axi(
                 else if(rvalid & rready)
                     r_next_state = R_DATA_ING;
 				else
-					r_next_state = R_DATA_ING;
+					r_next_state = R_DATA_START;
 			end
 			R_DATA_END:
 				r_next_state = R_DATA_IDLE;
