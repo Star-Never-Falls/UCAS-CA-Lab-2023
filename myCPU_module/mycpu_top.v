@@ -75,7 +75,7 @@ module mycpu_top(
     wire [ 31:0] icache_axi_rd_addr;
     wire         icache_axi_rd_rdy;
 	wire         icache_axi_ret_valid;
-	wire [  1:0] icache_axi_ret_last;
+	wire         icache_axi_ret_last;
 	wire [ 31:0] icache_axi_ret_data;
     // wr_* signals reserved to avoid ports suspending
     wire         icache_axi_wr_req;

@@ -48,7 +48,7 @@ module bridge_sram_axi(
     input  [31:0] icache_axi_rd_addr,
 	output        icache_axi_rd_rdy,
 	output        icache_axi_ret_valid,
-    output [ 2:0] icache_axi_ret_last,
+    output        icache_axi_ret_last,
 	output [31:0] icache_axi_ret_data,
     // data sram interface
     input               	data_sram_req,
@@ -335,9 +335,7 @@ module bridge_sram_axi(
 			buf_rdata[rid] <= rdata;
 	end
 	assign data_sram_rdata = buf_rdata[1];
-	assign data_sram_addr_ok = arid[0] & r_current_state[1] | wid[0] & (w_current_state[1] & (awready & wready | awvalid & ~awready & wvalid & ~wready)
-                                                                        | w_current_state[2] & wready
-                                                                        | w_current_state[3] & awready);
+	assign data_sram_addr_ok = arid[0] & r_current_state[1] | wid[0] & awvalid & awready;
 	assign data_sram_data_ok = rid_r[0] & r_current_state[3] | bid[0] & bvalid & bready;
 	
 	assign icache_axi_ret_data = buf_rdata[0];
